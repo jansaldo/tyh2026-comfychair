@@ -57,6 +57,18 @@ function isAssigned(assignments, paper, reviewer) {
     return false;
 }
 
+function assignmentCountFor(assignments, paper) {
+    let assignmentCount = 0;
+
+    for (const assignment of assignments) {
+        if (assignment.paper() === paper) {
+            assignmentCount += 1;
+        }
+    }
+
+    return assignmentCount;
+}
+
 beforeEach(buildFixture);
 
 describe("A ReviewerAssigner", function reviewerAssignerSuite() {
@@ -102,5 +114,21 @@ describe("A ReviewerAssigner", function reviewerAssignerSuite() {
         }
 
         expect(assignImpossibleCase).toThrow("Cannot assign 3 reviewers to every paper");
+    });
+
+    it("should preserve enough reviewer capacity for later papers", function shouldPreserveCapacityForLaterPapers() {
+        const fourPapers = [
+            new Paper("Paper 1", [author], author),
+            new Paper("Paper 2", [author], author),
+            new Paper("Paper 3", [author], author),
+            new Paper("Paper 4", [author], author)
+        ];
+
+        const assignments = assigner.assign(fourPapers, reviewers, []);
+
+        expect(assignmentCountFor(assignments, fourPapers[0])).toBe(3);
+        expect(assignmentCountFor(assignments, fourPapers[1])).toBe(3);
+        expect(assignmentCountFor(assignments, fourPapers[2])).toBe(3);
+        expect(assignmentCountFor(assignments, fourPapers[3])).toBe(3);
     });
 });

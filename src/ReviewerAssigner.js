@@ -43,7 +43,9 @@ class ReviewerAssigner{
         }
     }
     assignCandidatesWithPriority(paper, quotas, bids, assignments, priority){
-        for (const quota of quotas) {
+        const orderedQuotas = this.quotasByRemainingCapacity(quotas);
+
+        for (const quota of orderedQuotas) {
             if (this.assignedReviewersCountFor(paper, assignments) === 3) {
                 return;
             }
@@ -51,6 +53,30 @@ class ReviewerAssigner{
             if (this.shouldAssignCandidate(paper, quota, bids, assignments, priority)) {
                 this.assignReviewer(paper, quota, assignments);
             }
+        }
+    }
+    quotasByRemainingCapacity(quotas){
+        const orderedQuotas = [];
+
+        for (const quota of quotas) {
+            this.insertQuotaByRemainingCapacity(orderedQuotas, quota);
+        }
+
+        return orderedQuotas;
+    }
+    insertQuotaByRemainingCapacity(orderedQuotas, quota){
+        let inserted = false;
+
+        for (let index = 0; index < orderedQuotas.length; index += 1) {
+            if (quota.remaining() > orderedQuotas[index].remaining()) {
+                orderedQuotas.splice(index, 0, quota);
+                inserted = true;
+                break;
+            }
+        }
+
+        if (!inserted) {
+            orderedQuotas.push(quota);
         }
     }
     shouldAssignCandidate(paper, quota, bids, assignments, priority){

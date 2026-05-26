@@ -1,4 +1,5 @@
 const {Bid, Interests} = require("./Bid");
+const FixedAcceptanceSelector = require("./FixedAcceptanceSelector");
 const ReviewerAssigner = require("./ReviewerAssigner");
 
 class Session{
@@ -126,6 +127,24 @@ class Session{
         }
 
         return true;
+    }
+    setAcceptancePercentage(percentage){
+        if (!Number.isInteger(percentage) || percentage < 0 || percentage > 100) {
+            throw new Error("Acceptance percentage must be between 0 and 100");
+        }
+
+        this._acceptancePercentage = percentage;
+    }
+    selectAcceptedPapers(){
+        this.assertStage("Selection");
+
+        const selector = new FixedAcceptanceSelector();
+        this._acceptedPapers = selector.select(this._papers, this._acceptancePercentage);
+
+        return this._acceptedPapers;
+    }
+    acceptedPapers(){
+        return this._acceptedPapers;
     }
     bidExistsFor(paper, reviewer){
         return typeof(this.bidFor(paper, reviewer)) != "undefined";
