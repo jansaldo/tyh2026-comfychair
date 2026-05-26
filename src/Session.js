@@ -1,4 +1,5 @@
 const {Bid, Interests} = require("./Bid");
+const ReviewerAssigner = require("./ReviewerAssigner");
 
 class Session{
     constructor(){
@@ -6,7 +7,10 @@ class Session{
         this._programCommittee=[];
         this._papers=[];
         this._bids=[];
+        this._assignments=[];
+        this._acceptedPapers=[];
         this._stage="Receiving";
+        this._acceptancePercentage=0;
     }
     name(){
         return this._name;
@@ -49,6 +53,11 @@ class Session{
     closeSubmissions(){
         this.setStage("Bidding");
     }
+    assertStage(expectedStage){
+        if (this.stage() !== expectedStage) {
+            throw new Error("Session must be at stage " + expectedStage);
+        }
+    }
     enterBid(paper, reviewer, interest){
         if (this.stage() == "Bidding" )
             if(this.bidExistsFor(paper, reviewer)){
@@ -61,6 +70,35 @@ class Session{
             }
         else
             throw new Error("Cannot enter bids from the current stage.");
+    }
+    closeBidding(){
+        this.assertStage("Bidding");
+
+        const assigner = new ReviewerAssigner();
+        const assignments = assigner.assign(this._papers, this._programCommittee, this._bids);
+
+        this._assignments = assignments;
+        this._stage = "Reviewing";
+    }
+    assignedReviewersFor(paper){
+        const assignedReviewers = [];
+
+        for (const assignment of this._assignments) {
+            if (assignment.paper() === paper) {
+                assignedReviewers.push(assignment.reviewer());
+            }
+        }
+
+        return assignedReviewers;
+    }
+    isReviewerAssignedTo(paper, reviewer){
+        for (const assignment of this._assignments) {
+            if (assignment.matches(paper, reviewer)) {
+                return true;
+            }
+        }
+
+        return false;
     }
     bidExistsFor(paper, reviewer){
         return typeof(this.bidFor(paper, reviewer)) != "undefined";
