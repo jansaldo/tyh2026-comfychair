@@ -57,6 +57,12 @@ describe("During the bidding process, a Session", ()=>{
         expect(asse.interestFor(paper02, juan)).toBe(Interests.Maybe);
         expect(asse.bids()).toHaveLength(1);
     })
+    it("should recover an existing bid for a paper and reviewer", function shouldRecoverExistingBid() {
+        asse.closeSubmissions();
+        asse.enterBid(paper02, juan, Interests.Maybe);
+
+        expect(asse.bidFor(paper02, juan).interest()).toBe(Interests.Maybe);
+    });
     it("should not allow to receive submissions", ()=>{
         asse.closeSubmissions();
         expect(asse.canSubmit(paper01)).toBe(false);

@@ -26,12 +26,16 @@ class Paper{
         return this.reviews().length;
     }
     score(){
-        if (this.reviewsCount() > 0){
-            let sum = this.reviews().reduce( (partialSum, review) => partialSum + review.score(), 0 );
-            return sum / this.reviewsCount();
-        }
-        else 
+        if (this.reviewsCount() === 0){
             return 0;
+        }
+
+        let totalScore = 0;
+        for (const review of this._reviews) {
+            totalScore += review.score();
+        }
+
+        return totalScore / this.reviewsCount();
     }
 }
 

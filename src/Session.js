@@ -66,7 +66,14 @@ class Session{
         return typeof(this.bidFor(paper, reviewer)) != "undefined";
     }
     bidFor(paper, reviewer){
-        return this._bids.find( (suspect) => (suspect.paper() == paper) && (suspect.reviewer()==reviewer) );
+        for (const existingBid of this._bids) {
+            if (this.isBidFor(existingBid, paper, reviewer)) {
+                return existingBid;
+            }
+        }
+    }
+    isBidFor(existingBid, paper, reviewer){
+        return existingBid.paper() === paper && existingBid.reviewer() === reviewer;
     }
     interestFor(paper, reviewer){
         return this.bidFor(paper, reviewer).interest();
