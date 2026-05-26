@@ -14,10 +14,32 @@ class Paper{
     reviews(){
         return this._reviews;
     }
+    authors(){
+        return this._authors;
+    }
+    correspondingAuthor(){
+        return this._correspondingAuthor;
+    }
+    hasAuthor(user){
+        return this._authors.includes(user);
+    }
     isValid(){
         return (this._title !== "") && (this._authors.length > 0);
     }
+    hasReviewFrom(reviewer){
+        for (const existingReview of this._reviews) {
+            if (existingReview.reviewer() === reviewer) {
+                return true;
+            }
+        }
+
+        return false;
+    }
     addReview(reviewer, review, score){
+        if (this.hasReviewFrom(reviewer)) {
+            throw new Error("Reviewer already reviewed this paper");
+        }
+
         if (this.reviewsCount() < this.constructor.allowedReviews)
             this._reviews.push(new Review(reviewer, review, score));
         else throw(new Error("Cannot allow any more reviews"))

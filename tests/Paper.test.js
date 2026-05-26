@@ -17,7 +17,7 @@ describe("A Paper", ()=>{
     it("should receive up to 3 reviews", ()=>{
         paper.addReview(julian, "Paper is terrible", -3);
         expect(paper.reviews()).toHaveLength(1);
-        paper.addReview(julian, "Paper is bad", -2);
+        paper.addReview(juan, "Paper is bad", -2);
         paper.addReview(matias, "Paper is awesome", 3);
         let invalidReview = ()=>{paper.addReview(matias, "Paper is meh", 0);}
         expect(invalidReview).toThrow();
@@ -31,4 +31,17 @@ describe("A Paper", ()=>{
         paper.addReview(matias, "Paper is awesome", 3);
         expect(paper.score()).toBeCloseTo(-0.66666);
     })
+    it("should know whether a user is one of its authors", function shouldKnowItsAuthors() {
+        expect(paper.hasAuthor(juan)).toBe(true);
+        expect(paper.hasAuthor(julian)).toBe(false);
+    });
+    it("should not accept two reviews from the same reviewer", function shouldRejectDuplicateReviewer() {
+        paper.addReview(julian, "Paper is bad", -2);
+
+        function duplicateReview() {
+            paper.addReview(julian, "Paper is still bad", -1);
+        }
+
+        expect(duplicateReview).toThrow("Reviewer already reviewed this paper");
+    });
 })
