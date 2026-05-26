@@ -100,6 +100,33 @@ class Session{
 
         return false;
     }
+    submitReview(paper, reviewer, text, score){
+        this.assertStage("Reviewing");
+
+        if (!this.isReviewerAssignedTo(paper, reviewer)) {
+            throw new Error("Reviewer is not assigned to this paper");
+        }
+
+        paper.addReview(reviewer, text, score);
+    }
+    closeReviewing(){
+        this.assertStage("Reviewing");
+
+        if (!this.allReviewsSubmitted()) {
+            throw new Error("Cannot close reviewing before all assigned reviews are submitted");
+        }
+
+        this._stage = "Selection";
+    }
+    allReviewsSubmitted(){
+        for (const paper of this._papers) {
+            if (paper.reviewsCount() !== 3) {
+                return false;
+            }
+        }
+
+        return true;
+    }
     bidExistsFor(paper, reviewer){
         return typeof(this.bidFor(paper, reviewer)) != "undefined";
     }
