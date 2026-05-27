@@ -2,84 +2,107 @@
 
 Sistema para organizar conferencias científicas: envío, revisión y selección de artículos.
 
-Este repositorio contiene el código base para el **Trabajo Práctico — Parte 1** de Técnicas y Herramientas de Ingeniería de Software (Maestría en IS - UNLP, 2026).
+Este repositorio contiene la solución completa de la Parte 1 del Trabajo Práctico de Técnicas y Herramientas de Ingeniería de Software (Maestría en IS - UNLP, 2026).
 
----
+## Requisitos
 
-## Estructura del proyecto
+- Node.js 18 o superior
+- npm 9 o superior
 
-```
-src/
-  User.js            # Usuario registrado en el sistema
-  Paper.js           # Clase base para artículos
-  RegularPaper.js    # Artículo regular (con abstract)
-  Poster.js          # Poster (con URL de fuentes)
-  Review.js          # Revisión de un artículo
-  Bid.js             # Expresión de interés de un revisor
-  Conference.js      # Conferencia con chairs y sesiones
-  Session.js         # Sesión/track con su flujo de etapas
-tests/
-  Paper.test.js
-  RegularPaper.test.js
-  Poster.test.js
-  Bid.test.js
-  Session.test.js
-```
-
----
-
-## Setup
+## Instalación
 
 ```bash
 npm install
+```
+
+## Ejecución de tests
+
+Comando general:
+
+```bash
 npm test
 ```
 
-Para ver cobertura:
+En algunos entornos Windows puede aparecer `spawn EPERM` con Jest al usar procesos hijos. Si pasa eso, ejecutar en modo secuencial:
 
 ```bash
-npm test -- --coverage
+npx jest --runInBand
 ```
 
----
+Estado validado localmente en este repositorio:
 
-## Enunciado
+- **11 suites OK**
+- **50 tests OK**
+- Cobertura global de código superior al **90%**.
 
-El enunciado completo está en [`ENUNCIADO.md`](./ENUNCIADO.md).
+## Estructura del proyecto
 
----
+```text
+src/
+  User.js                     # Registro y representación de usuarios
+  Conference.js               # Conferencia general
+  Session.js                  # Agregado raíz del track y orquestador del flujo
+  Paper.js                    # Clase base de artículo (validaciones y reviews)
+  RegularPaper.js             # Artículo regular (valida abstract < 300 palabras)
+  Poster.js                   # Artículo tipo Poster
+  Review.js                   # Evaluación individual de un revisor
+  Bid.js                      # Expresión de interés y enum de Interests (Symbol)
+  ReviewAssignment.js        # Asociación inmutable de asignación
+  ReviewerQuota.js           # Cuota/capacidad laboral de revisores
+  ReviewerAssigner.js        # Algoritmo de asignación equitativo por prioridades
+  FixedAcceptanceSelector.js # Algoritmo de selección por corte fijo porcentual
+tests/
+  Bid.test.js
+  Paper.test.js
+  Poster.test.js
+  RegularPaper.test.js
+  Review.test.js
+  ReviewerAssigner.test.js
+  Session.test.js
+  SessionAssignment.test.js
+  SessionReviewing.test.js
+  SessionSelection.test.js
+  SessionWorkflow.test.js
+ENUNCIADO.md                  # Enunciado original de la Parte 1
+PLAN.md                       # Plan de implementación original
+DOCUMENTACION_TECNICA.md      # Documentación técnica completa (con diagrama de clases)
+DECISIONES.md                 # Decisiones de diseño y resolución de ambigüedades
+```
 
-## Lo que está implementado
+## Modelo de dominio implementado
 
-El código base cubre el modelo de dominio y las dos primeras etapas del flujo de una sesión:
+- `User`: representa un usuario registrado (nombre, afiliación, email, password hasheada SHA-256 en base64).
+- `Conference`: contiene nombre, chairs y sesiones.
+- `Paper`: clase base de artículo con título, autores, autor corresponsal, revisiones y score promedio.
+- `RegularPaper`: extiende `Paper`, agrega abstract y valida máximo 300 palabras.
+- `Poster`: extiende `Paper`, agrega URL de adjunto principal y URL de fuentes.
+- `Review`: guarda revisor, texto y puntaje (entre -3 y +3).
+- `Bid`: expresa interés de un revisor por un paper (`Interested`, `Maybe`, `NotInterested`, `Conflict`).
+- `ReviewAssignment`: registra la asignación de un revisor a un paper.
+- `ReviewerQuota`: rastrea y gestiona la carga de revisiones asignada a cada revisor.
+- `ReviewerAssigner`: encapsula el algoritmo de asignación de revisores.
+- `FixedAcceptanceSelector`: realiza el filtrado de aceptación por corte fijo.
+- `Session`: coordina el flujo de etapas y gestiona envíos, bids, asignaciones y selección.
 
-- **Modelo**: `User`, `Paper`, `RegularPaper`, `Poster`, `Review`, `Bid`, `Conference`
-- **Session**: etapa de `Receiving` (submit con validación de formato) y `Bidding` (registro y modificación de bids)
+## Flujo de `Session` implementado
 
-Los tests provistos verifican este comportamiento y deben mantenerse en verde.
+El flujo transiciona de forma secuencial y manual a través de las siguientes etapas:
 
-## Lo que deben implementar
+1. `Receiving`: los autores pueden enviar artículos (`submit`) válidos (`paper.isValid()`).
+2. `Bidding`: se ingresa tras llamar a `closeSubmissions()`. Los revisores registran o actualizan sus intereses (`enterBid`). No se aceptan nuevos artículos.
+3. `Reviewing`: se ingresa con `closeBidding()`, ejecutando automáticamente el algoritmo de asignación de 3 revisores por artículo (evitando conflictos de interés). Los revisores asignados suben su evaluación mediante `submitReview`.
+4. `Selection`: se ingresa mediante `closeReviewing()` cuando todos los artículos tienen sus 3 revisiones completas. Se establece el porcentaje máximo mediante `setAcceptancePercentage()` y se realiza el corte fijo a través de `selectAcceptedPapers()`.
 
-Las secciones 4.1, 4.2 y 4.3 del enunciado:
+## Convenciones del trabajo
 
-1. **Asignación de revisores** — algoritmo de asignación por prioridad de bids, con distribución equitativa y exclusión por conflicto de interés
-2. **Carga de revisiones** — los revisores asignados ingresan texto y puntaje
-3. **Selección por corte fijo** — aceptación de artículos en orden decreciente de score hasta un porcentaje configurado
+- Orientación a objetos como estilo principal.
+- No utilizar lambdas ni funciones anónimas en el código de producción.
+- Acompañar cada funcionalidad con pruebas unitarias exhaustivas.
+- Registrar decisiones de diseño en el documento correspondiente.
 
-Cada bloque debe estar cubierto por tests unitarios.
+## Documentos clave
 
----
-
-## Convenciones
-
-- Orientación a objetos estricta: cada clase tiene responsabilidades claras
-- Sin lambdas ni funciones anónimas, salvo en la API de colecciones (`map`, `filter`, `reduce`, etc.)
-- Cualquier decisión de diseño sobre el enunciado debe quedar registrada en el documento de decisiones
-
----
-
-## Entrega
-
-**Fecha límite: 29 de mayo de 2026. Grupos de 2 o 3 personas.**
-
-Repositorio GitHub con historia de commits que refleje la contribución de cada integrante.
+- Especificación completa del enunciado: [`ENUNCIADO.md`](./ENUNCIADO.md)
+- Planificación de la implementación: [`PLAN.md`](./PLAN.md)
+- Documentación técnica y diagramas de clases: [`DOCUMENTACION_TECNICA.md`](./DOCUMENTACION_TECNICA.md)
+- Decisiones de diseño y ambigüedades resueltas: [`DECISIONES.md`](./DECISIONES.md)
