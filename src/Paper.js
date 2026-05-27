@@ -14,10 +14,32 @@ class Paper{
     reviews(){
         return this._reviews;
     }
+    authors(){
+        return this._authors;
+    }
+    correspondingAuthor(){
+        return this._correspondingAuthor;
+    }
+    hasAuthor(user){
+        return this._authors.includes(user);
+    }
     isValid(){
         return (this._title !== "") && (this._authors.length > 0);
     }
+    hasReviewFrom(reviewer){
+        for (const existingReview of this._reviews) {
+            if (existingReview.reviewer() === reviewer) {
+                return true;
+            }
+        }
+
+        return false;
+    }
     addReview(reviewer, review, score){
+        if (this.hasReviewFrom(reviewer)) {
+            throw new Error("Reviewer already reviewed this paper");
+        }
+
         if (this.reviewsCount() < this.constructor.allowedReviews)
             this._reviews.push(new Review(reviewer, review, score));
         else throw(new Error("Cannot allow any more reviews"))
@@ -26,12 +48,16 @@ class Paper{
         return this.reviews().length;
     }
     score(){
-        if (this.reviewsCount() > 0){
-            let sum = this.reviews().reduce( (partialSum, review) => partialSum + review.score(), 0 );
-            return sum / this.reviewsCount();
-        }
-        else 
+        if (this.reviewsCount() === 0){
             return 0;
+        }
+
+        let totalScore = 0;
+        for (const review of this._reviews) {
+            totalScore += review.score();
+        }
+
+        return totalScore / this.reviewsCount();
     }
 }
 
