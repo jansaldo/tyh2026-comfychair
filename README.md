@@ -31,9 +31,34 @@ npx jest --runInBand
 
 Estado validado localmente en este repositorio:
 
-- **11 suites OK**
-- **50 tests OK**
+- **12 suites OK**
+- **54 tests OK**
 - Cobertura global de código superior al **90%**.
+
+## Demo en vivo
+
+Se incluye un script corto en la raíz del proyecto, [`demo.js`](./demo.js), que arma una conferencia de ejemplo con datos aleatorios y recorre el flujo completo de una `Session`:
+
+1. crea conferencia, chairs y comité de programa,
+2. genera papers regulares y posters,
+3. carga bids,
+4. asigna revisores,
+5. envía revisiones,
+6. ejecuta la selección final.
+
+Durante la corrida imprime en consola un paso a paso humano de los métodos involucrados y termina con un resumen de la conferencia.
+
+Para correrlo:
+
+```bash
+node demo.js
+```
+
+O, si preferís dejarlo en `npm`:
+
+```bash
+npm run demo
+```
 
 ## Estructura del proyecto
 

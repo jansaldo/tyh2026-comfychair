@@ -4,7 +4,8 @@
   "description": "TyH 2024 - Reference Implementation",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "demo": "node demo.js"
   },
   "keywords": [],
   "author": "",
