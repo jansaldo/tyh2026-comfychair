@@ -1,5 +1,5 @@
 # Plan de Implementacion de ComfyChair
-
+xxxx
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Implementar asignacion de revisores, carga de revisiones y seleccion por corte fijo sobre el codigo base actual, manteniendo los tests existentes en verde y conservando cobertura mayor o igual a 80%.
