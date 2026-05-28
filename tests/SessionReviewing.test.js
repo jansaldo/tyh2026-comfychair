@@ -56,6 +56,14 @@ function submitOnlyPartOfTheRequiredReviews(targetSession, targetPapers, targetR
     targetSession.submitReview(targetPapers[0], targetReviewers[0], "First review", 1);
 }
 
+function addThreeDirectReviewsFromUnassignedReviewers(targetPapers) {
+    for (const paper of targetPapers) {
+        paper.addReview(new User("unassigned-1", "UNLP", "u1@unlp.edu", "123"), "Direct review", 1);
+        paper.addReview(new User("unassigned-2", "UNLP", "u2@unlp.edu", "123"), "Direct review", 1);
+        paper.addReview(new User("unassigned-3", "UNLP", "u3@unlp.edu", "123"), "Direct review", 1);
+    }
+}
+
 beforeEach(buildFixture);
 
 describe("A Session during reviewing", function sessionReviewingSuite() {
@@ -97,9 +105,20 @@ describe("A Session during reviewing", function sessionReviewingSuite() {
         expect(duplicateReview).toThrow("Reviewer already reviewed this paper");
     });
 
-    it("should not close reviewing until every paper has three reviews", function shouldBlockSelectionUntilReviewsAreComplete() {
+    it("should not close reviewing until every paper has all assigned reviews", function shouldBlockSelectionUntilReviewsAreComplete() {
         moveSessionToReviewingWithAssignments(session, papers, reviewers);
         submitOnlyPartOfTheRequiredReviews(session, papers, reviewers);
+
+        function closeReviewing() {
+            session.closeReviewing();
+        }
+
+        expect(closeReviewing).toThrow("Cannot close reviewing before all assigned reviews are submitted");
+    });
+
+    it("should not close reviewing when reviews were not submitted by assigned reviewers", function shouldRequireAssignedReviewerReviews() {
+        moveSessionToReviewingWithAssignments(session, papers, reviewers);
+        addThreeDirectReviewsFromUnassignedReviewers(papers);
 
         function closeReviewing() {
             session.closeReviewing();

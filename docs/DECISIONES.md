@@ -10,6 +10,7 @@ Este documento describe las decisiones de diseño tomadas durante el desarrollo 
 
 - **Ambigüedad:** La sección 2.4 indica que, por defecto, para cada artículo un revisor está _no interesado_. Sin embargo, la sección 2.5 establece el orden de prioridad de asignación como: `Interested -> Maybe -> sin bid -> NotInterested`. Si por defecto el estado es _no interesado_, no habría diferencia entre "sin bid" y "no interesado".
 - **Resolución:** Para mantener la prioridad requerida por el algoritmo de asignación, se decidió que la **ausencia de un objeto `Bid`** en el sistema representa el estado "sin bid" (con prioridad 2, superior a `NotInterested`). El estado `NotInterested` (prioridad 3) solo se aplica si el revisor ingresó explícitamente ese interés durante la etapa de `Bidding`.
+- **Consecuencia en API:** Cuando se consulta `Session.interestFor(paper, reviewer)` y no existe un `Bid` explícito, el sistema ahora falla con `Error("No bid found for paper and reviewer")` en lugar de colapsar con un `TypeError` o degradar implícitamente el caso a `NotInterested`.
 
 ### 1.2. Fórmula de Distribución de Carga de Revisores
 
@@ -56,9 +57,19 @@ Este documento describe las decisiones de diseño tomadas durante el desarrollo 
 
 ### 2.3. Invariantes en el Modelo de Dominio (`Paper` y `Review`)
 
-- **Decisión:** La clase `Review` valida en su constructor que el score sea un número entero en el rango $[-3, +3]$. La clase `Paper` controla que no se superen las 3 revisiones máximas permitidas y que un revisor no pueda registrar más de una revisión para el mismo artículo.
+- **Decisión:** La clase `Review` valida en su constructor que el score sea un número entero en el rango $[-3, +3]$. La clase `Paper` controla que no se superen las 3 revisiones máximas permitidas y que un revisor no pueda registrar más de una revisión para el mismo artículo. Ese máximo queda centralizado en `Paper.allowedReviews = 3`, y otras piezas del sistema lo reutilizan en lugar de repetir números mágicos.
 - **Justificación:** Seguir el principio de que los objetos del dominio deben proteger sus propias invariantes en todo momento, evitando estados inválidos e inconsistencias.
 
 ### 2.4. Restricción de Estilo de Código (Sin Lambdas ni Funciones Anónimas)
 
 - **Decisión:** En consonancia con las pautas del trabajo práctico y para apegarse a un estilo de orientación a objetos clásico, se evitó el uso de funciones anónimas y funciones flecha (`() => {}`) en todo el código de producción. En su lugar, se utilizaron bucles `for...of` tradicionales y métodos auxiliares con nombre explícito (por ejemplo, en `ReviewerAssigner.js` para ordenar los quotas por capacidad remanente).
+
+### 2.5. Encapsulación del Flujo de Etapas en `Session`
+
+- **Decisión:** La mutación genérica de la etapa de una sesión dejó de ser una API pública y pasó a un método privado `#setStage(stage)`. Hacia afuera solo permanecen disponibles las transiciones de dominio: `closeSubmissions()`, `closeBidding()` y `closeReviewing()`.
+- **Justificación:** Una sesión es una máquina de estados secuencial. Exponer un mutador público permitía saltar etapas o forzar estados inválidos desde cualquier consumidor, debilitando las reglas del dominio.
+
+### 2.6. Criterio de Cierre de `Reviewing`
+
+- **Decisión:** El cierre de la etapa `Reviewing` se valida contra las asignaciones efectivas y no contra un conteo bruto de reviews por paper. Es decir, para cerrar la etapa, cada reviewer asignado a un artículo debe haber enviado su revisión.
+- **Justificación:** El enunciado sigue exigiendo exactamente 3 revisores por artículo, pero chequear solo `reviewsCount() === 3` abría un falso positivo: tres reviews cargadas por usuarios no asignados permitían avanzar de etapa. La validación por asignación conserva la regla de 3 y además protege la integridad del workflow.

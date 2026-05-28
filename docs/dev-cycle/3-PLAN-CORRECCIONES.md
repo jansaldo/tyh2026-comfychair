@@ -2,7 +2,7 @@
 
 ## Resumen
 
-Corregir los 3 errores conceptuales señalados sin ampliar el alcance: proteger la máquina de estados de `Session`, hacer explícito el caso de bid inexistente en `interestFor()`, y desacoplar el cierre de revisión del número mágico `3`.
+Corregir los 3 errores conceptuales señalados sin ampliar el alcance: proteger la máquina de estados de `Session`, hacer explícito el caso de bid inexistente en `interestFor()`, y desacoplar el cierre de revisión del número mágico `3` sin relajar la regla de dominio de exactamente 3 revisores por artículo.
 
 Trabajaría en una rama nueva desde `main`, por ejemplo `fix/feedback-tecnico-parte-1`, dejando fuera el `package-lock.json` no trackeado que hoy aparece en el workspace.
 
@@ -20,6 +20,7 @@ Trabajaría en una rama nueva desde `main`, por ejemplo `fix/feedback-tecnico-pa
   - Para cada asignación `(paper, reviewer)`, el `paper` debe tener una review de ese reviewer.
   - Usar `paper.hasReviewFrom(reviewer)`.
   - No depender de `paper.reviewsCount() === 3`.
+  - Mantener la regla de exactamente 3 revisores usando la constante ya existente `Paper.allowedReviews`, no reinterpretarla como “al menos 1 revisión”.
 
 ## Secuencia de commits TDD
 
@@ -157,7 +158,7 @@ Resultado esperado RED: hoy `closeReviewing()` permite avanzar porque solo cuent
 ```js
 allReviewsSubmitted(){
     for (const paper of this._papers) {
-        if (!this.allAssignedReviewsSubmittedFor(paper)) {
+        if (!this.#allAssignedReviewsSubmittedFor(paper)) {
             return false;
         }
     }
@@ -165,8 +166,12 @@ allReviewsSubmitted(){
     return true;
 }
 
-allAssignedReviewsSubmittedFor(paper){
+#allAssignedReviewsSubmittedFor(paper){
     const assignedReviewers = this.assignedReviewersFor(paper);
+
+    if (assignedReviewers.length !== paper.constructor.allowedReviews) {
+        return false;
+    }
 
     for (const reviewer of assignedReviewers) {
         if (!paper.hasReviewFrom(reviewer)) {

@@ -35,6 +35,9 @@ describe("A Session", ()=>{
         expect(asse.reviewers()).toContain(juan);
         expect(asse.reviewers()).toHaveLength(1);
     })
+    it("should not expose a public stage mutator", function shouldNotExposePublicStageMutator() {
+        expect(asse.setStage).toBeUndefined();
+    });
     it("should allow paper submissions", ()=>{
         expect(asse.canSubmit(paper01)).toBe(true);
         asse.submit(paper01);
@@ -62,6 +65,15 @@ describe("During the bidding process, a Session", ()=>{
         asse.enterBid(paper02, juan, Interests.Maybe);
 
         expect(asse.bidFor(paper02, juan).interest()).toBe(Interests.Maybe);
+    });
+    it("should fail with a descriptive error when querying missing bid interest", function shouldFailForMissingBidInterest() {
+        asse.closeSubmissions();
+
+        function queryMissingInterest() {
+            asse.interestFor(paper01, matias);
+        }
+
+        expect(queryMissingInterest).toThrow("No bid found for paper and reviewer");
     });
     it("should not allow to receive submissions", ()=>{
         asse.closeSubmissions();

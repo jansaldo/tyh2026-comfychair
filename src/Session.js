@@ -48,11 +48,11 @@ class Session{
     stage(){
         return this._stage;
     }
-    setStage(stage){
+    #setStage(stage){
         this._stage = stage;
     }
     closeSubmissions(){
-        this.setStage("Bidding");
+        this.#setStage("Bidding");
     }
     assertStage(expectedStage){
         if (this.stage() !== expectedStage) {
@@ -79,7 +79,7 @@ class Session{
         const assignments = assigner.assign(this._papers, this._programCommittee, this._bids);
 
         this._assignments = assignments;
-        this._stage = "Reviewing";
+        this.#setStage("Reviewing");
     }
     assignedReviewersFor(paper){
         const assignedReviewers = [];
@@ -117,11 +117,26 @@ class Session{
             throw new Error("Cannot close reviewing before all assigned reviews are submitted");
         }
 
-        this._stage = "Selection";
+        this.#setStage("Selection");
     }
     allReviewsSubmitted(){
         for (const paper of this._papers) {
-            if (paper.reviewsCount() !== 3) {
+            if (!this.#allAssignedReviewsSubmittedFor(paper)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+    #allAssignedReviewsSubmittedFor(paper){
+        const assignedReviewers = this.assignedReviewersFor(paper);
+
+        if (assignedReviewers.length !== paper.constructor.allowedReviews) {
+            return false;
+        }
+
+        for (const reviewer of assignedReviewers) {
+            if (!paper.hasReviewFrom(reviewer)) {
                 return false;
             }
         }
@@ -160,7 +175,13 @@ class Session{
         return existingBid.paper() === paper && existingBid.reviewer() === reviewer;
     }
     interestFor(paper, reviewer){
-        return this.bidFor(paper, reviewer).interest();
+        const bid = this.bidFor(paper, reviewer);
+
+        if (typeof(bid) === "undefined") {
+            throw new Error("No bid found for paper and reviewer");
+        }
+
+        return bid.interest();
     }
 }
 

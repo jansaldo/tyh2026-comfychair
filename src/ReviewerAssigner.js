@@ -1,10 +1,11 @@
 const {Interests} = require("./Bid");
+const Paper = require("./Paper");
 const ReviewAssignment = require("./ReviewAssignment");
 const ReviewerQuota = require("./ReviewerQuota");
 
 class ReviewerAssigner{
     buildQuotas(reviewers, paperCount){
-        const totalReviews = paperCount * 3;
+        const totalReviews = paperCount * Paper.allowedReviews;
         const baseQuota = Math.floor(totalReviews / reviewers.length);
         const remainder = totalReviews % reviewers.length;
         const quotas = [];
@@ -38,15 +39,15 @@ class ReviewerAssigner{
             this.assignCandidatesWithPriority(paper, quotas, bids, assignments, priority);
         }
 
-        if (assignments.length - initialAssignmentCount !== 3) {
-            throw new Error("Cannot assign 3 reviewers to every paper");
+        if (assignments.length - initialAssignmentCount !== Paper.allowedReviews) {
+            throw new Error("Cannot assign " + Paper.allowedReviews + " reviewers to every paper");
         }
     }
     assignCandidatesWithPriority(paper, quotas, bids, assignments, priority){
         const orderedQuotas = this.quotasByRemainingCapacity(quotas);
 
         for (const quota of orderedQuotas) {
-            if (this.assignedReviewersCountFor(paper, assignments) === 3) {
+            if (this.assignedReviewersCountFor(paper, assignments) === Paper.allowedReviews) {
                 return;
             }
 
