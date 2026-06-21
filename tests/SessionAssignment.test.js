@@ -85,5 +85,7 @@ describe("A Session closing bidding", function sessionAssignmentSuite() {
 
         expect(closeBidding).toThrow("Cannot assign 3 reviewers to every paper");
         expect(impossibleSession.stage()).toBe("Bidding");
+        expect(impossibleSession.assignedReviewersFor(papers[0])).toEqual([]);
+        expect(impossibleSession.assignedReviewersFor(papers[1])).toEqual([]);
     });
 });
