@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:subagent-driven-development` (recommended) or `superpowers:executing-plans` to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Evolucionar ComfyChair para modelar el flujo de la sesión con estados extensibles, permitir actualizaciones atómicas de papers durante Recepción y soportar políticas configurables de aceptación, preservando el comportamiento observable del TP1 y una cobertura mínima del 80%.
+**Goal:** Corregir primero la actualización de envíos omitida en el TP1 y luego evolucionar ComfyChair para modelar el flujo de la sesión con estados extensibles y políticas configurables de aceptación, preservando el comportamiento observable existente y una cobertura mínima del 80%.
 
-**Architecture:** `Session` seguirá siendo el agregado raíz, pero delegará las operaciones dependientes de la etapa a objetos State (`ReceivingStage`, `BiddingStage`, `ReviewingStage`, `SelectionStage`). La selección se resolverá con objetos Strategy que compartirán un ordenamiento estable por score y orden de envío. Las actualizaciones usarán un paper candidato separado: se valida por completo y, sólo si es válido, sus datos editables se copian sobre el envío original para conservar identidad y posición.
+**Architecture:** El primer PR incorporará la actualización atómica sobre el flujo actual para cerrar el issue #3 sin mezclarlo con el rediseño del TP2. El segundo PR convertirá `Session` en contexto State (`ReceivingStage`, `BiddingStage`, `ReviewingStage`, `SelectionStage`) y migrará allí la restricción temporal de actualización. El tercero resolverá la selección con objetos Strategy que compartirán un ordenamiento estable por score y orden de envío. Las actualizaciones usarán un paper candidato separado: se valida por completo y, sólo si es válido, sus datos editables se copian sobre el envío original para conservar identidad y posición.
 
 **Tech Stack:** Node.js 18+, CommonJS, JavaScript orientado a objetos, Jest 29.
 
@@ -12,12 +12,12 @@
 
 ## 1. Estado base comprobado
 
-- Rama relevada: `main`, commit `d0ec8db`.
+- Rama relevada: `main`, commit `0a53d90`.
 - Suite base: `12` suites y `54` tests en verde.
 - Cobertura base: `96.25%` statements, `94.84%` branches, `94.04%` functions y `96.16%` lines.
 - Flujo existente: `Receiving -> Bidding -> Reviewing -> Selection` mediante un string y condicionales dentro de `Session`.
 - Selección existente: `FixedAcceptanceSelector`, con porcentaje entero de `0` a `100`, `Math.floor` y desempate por orden de envío.
-- Cambios locales ajenos que deben preservarse: renombre de `ENUNCIADO.md` a `ENUNCIADO_TP1.md`, alta de `ENUNCIADO_TP2.md` y `package-lock.json` no trackeado.
+- Cambios locales ajenos que deben preservarse: `package-lock.json` no trackeado.
 
 ## 2. Alcance y restricciones
 
@@ -36,19 +36,36 @@
 
 - Reloj, scheduler o cierre automático por fecha.
 - Nuevas etapas posteriores a Selección.
-- Cambios en `README.md`, `demo.js`, `docs/DECISIONES.md`, `docs/DOCUMENTACION_TECNICA.md`, diagramas o cualquier otra documentación.
+- Cambios en `README.md`, `demo.js`, `docs/DECISIONES.md`, `docs/DOCUMENTACION_TECNICA.md`, diagramas o cualquier otra documentación **durante los PRs 1 a 3**. Estos entregables siguen dentro del alcance total del TP2, pero quedan delegados al PR 4.
 - Refactors de `ReviewerAssigner`, `Bid`, `Review`, `Conference` o `User` que no sean necesarios para el TP2.
 - Incorporación de `package-lock.json` a los commits salvo decisión explícita del equipo.
 
-## 3. Decisiones de diseño
+## 3. Secuencia de PRs y responsables
 
-### 3.1. Alternativas evaluadas
+Los PRs se implementarán y mergearán en este orden. Cada casillero se marca con `- [x]` dentro del mismo PR que completa el trabajo; no se marca por anticipado.
+
+- [ ] **PR 1 — `fix`: permitir actualizar envíos hasta el cierre de Recepción (`#3`).** A cargo nuestro. Rama: `fix/issue-3-update-paper-before-deadline`. Incluye el protocolo atómico de actualización, autorización por autor, pertenencia a la sesión, conservación de identidad y orden, rechazo después del cierre y sus tests. Se clasifica como `fix` porque el TP1 ya exigía que “Los envíos pueden modificarse hasta el cierre de la etapa” y la implementación no lo contempló.
+- [ ] **PR 2 — `refactor`: modelar el flujo de la sesión con State.** A cargo nuestro. Rama: `refactor/session-state-workflow`. Parte del PR 1 ya mergeado, elimina el despacho condicional por etapa, migra la regla de actualización a `ReceivingStage`, preserva las APIs del TP1 y prueba operaciones inválidas y transiciones atómicas.
+- [ ] **PR 3 — `feat`: incorporar políticas configurables de aceptación.** A cargo nuestro. Rama: `feat/configurable-acceptance-policies`. Parte del PR 2 ya mergeado, conserva la política porcentual e incorpora `AcceptanceByCount`, `AcceptanceByScoreThreshold` y configuración independiente por sesión mediante Strategy.
+- [ ] **PR 4 — `docs`: completar entregables y cierre del TP2.**. Rama sugerida: `docs/tp2-deliverables`. Debe actualizar el diagrama de clases y los documentos de decisiones/diseño para reflejar State y Strategy, revisar la documentación técnica y ejecutar la verificación final de entregables y cobertura.
+
+Orden de ejecución de las tareas detalladas de este documento:
+
+1. PR 1: Tasks PR1.1, PR1.2 y PR1.3.
+2. PR 2: Tasks PR2.1 y PR2.2.
+3. PR 3: Tasks PR3.1, PR3.2 y PR3.3.
+4. Verificación técnica de los PRs 1 a 3: Task Cierre.1.
+5. PR 4: Task PR4.1.
+
+## 4. Decisiones de diseño
+
+### 4.1. Alternativas evaluadas
 
 1. **State + Strategy — elegida.** Cada etapa recibe las operaciones válidas y hereda rechazos descriptivos para el resto. Cada política implementa `select(papers)`. Es la alternativa que mejor satisface extensibilidad, responsabilidad única y ausencia de condicionales en `Session`.
 2. **Tabla de transiciones y handlers dentro de `Session`.** Reduce archivos, pero conserva un despachador central y hace que cada operación nueva obligue a editar la tabla y el agregado.
 3. **Subclases de `Session` por etapa.** Evita condicionales, pero complica conservar la identidad de la sesión al transicionar y duplica el estado común del agregado.
 
-### 3.2. Contrato público resultante
+### 4.2. Contrato público resultante
 
 Se preservan estas APIs públicas del flujo del TP1, además de las consultas existentes de papers, bids y asignaciones:
 
@@ -76,7 +93,7 @@ session.acceptancePolicy();
 
 `stage()` seguirá devolviendo exactamente `"Receiving"`, `"Bidding"`, `"Reviewing"` o `"Selection"`; el cambio a objetos State no se filtrará a consumidores existentes.
 
-### 3.3. Semántica de actualización
+### 4.3. Semántica de actualización
 
 - `submittedPaper` se identifica por referencia dentro de `session.papers()`.
 - `requestingAuthor` debe pertenecer a la lista de autores de la versión actualmente enviada.
@@ -87,7 +104,7 @@ session.acceptancePolicy();
 - La referencia del paper dentro de `_papers` y su índice no cambian.
 - Rechazar una actualización con el mismo objeto evita que un consumidor mutile la versión válida antes de pedir validación transaccional.
 
-### 3.4. Operaciones por estado
+### 4.4. Operaciones por estado
 
 | Operación | Receiving | Bidding | Reviewing | Selection |
 |---|---:|---:|---:|---:|
@@ -103,7 +120,7 @@ session.acceptancePolicy();
 
 `setAcceptancePolicy` y `setAcceptancePercentage` son configuración, no selección; se permiten en cualquier etapa y limpian el resultado aceptado previamente para no dejar datos obsoletos.
 
-### 3.5. Errores observables
+### 4.5. Errores observables
 
 Los tests deben fijar estos mensajes:
 
@@ -127,7 +144,7 @@ Maximum accepted paper count must be a non-negative integer
 Score threshold must be a finite number
 ```
 
-## 4. Mapa de archivos
+## 5. Mapa de archivos
 
 ### Crear
 
@@ -147,7 +164,7 @@ Score threshold must be a finite number
 
 ### Modificar
 
-- `src/Session.js`: convertirlo en contexto State y configurar Strategy por instancia.
+- `src/Session.js`: incorporar primero la actualización del issue #3; luego convertirlo en contexto State y configurar Strategy por instancia.
 - `src/Paper.js`: protocolo de copia validada de datos editables comunes.
 - `src/RegularPaper.js`: copia del abstract.
 - `src/Poster.js`: copia de URLs específicas.
@@ -161,9 +178,9 @@ Score threshold must be a finite number
 - `tests/SessionWorkflow.test.js`: conservar el flujo porcentual completo como regresión.
 - `tests/Demo.test.js`: comprobar que la compatibilidad del TP1 mantiene operativa la demo existente.
 
-## 5. Estrategia TDD y secuencia de implementación
+## 6. Estrategia TDD y secuencia de implementación
 
-### Task 1: Congelar la baseline y proteger el workspace
+### Task PR1.1: Congelar la baseline y proteger el workspace
 
 **Files:**
 - Test: todos los archivos bajo `tests/`
@@ -195,11 +212,11 @@ Run:
 git branch --show-current
 ```
 
-Expected: una rama de trabajo del TP2. Si todavía es `main`, crearla antes de implementar sin alterar los cambios locales del usuario.
+Expected para el PR 1: `fix/issue-3-update-paper-before-deadline`. Si todavía es `main`, crear esa rama antes de implementar sin alterar los cambios locales del usuario. Para los PRs siguientes, crear la rama indicada en la sección 3 desde el PR anterior ya integrado.
 
 No commit en esta tarea.
 
-### Task 2: Hacer atómica la actualización de datos editables de `Paper`
+### Task PR1.2: Hacer atómica la actualización de datos editables de `Paper`
 
 **Files:**
 - Modify: `src/Paper.js`
@@ -402,10 +419,10 @@ Expected: todas las suites en verde.
 
 ```bash
 git add src/Paper.js src/RegularPaper.js src/Poster.js tests/Paper.test.js tests/RegularPaper.test.js tests/Poster.test.js
-git commit -m "feat: support atomic paper data updates"
+git commit -m "fix: support atomic paper data updates"
 ```
 
-### Task 3: Extraer el contrato común de políticas y preservar el porcentaje del TP1
+### Task PR3.1: Extraer el contrato común de políticas y preservar el porcentaje del TP1
 
 **Files:**
 - Create: `src/AcceptancePolicy.js`
@@ -567,7 +584,7 @@ git add src/AcceptancePolicy.js src/FixedAcceptanceSelector.js tests/FixedAccept
 git commit -m "refactor: expose percentage selection as a policy"
 ```
 
-### Task 4: Implementar las dos políticas nuevas de aceptación
+### Task PR3.2: Implementar las dos políticas nuevas de aceptación
 
 **Files:**
 - Create: `src/AcceptanceByCount.js`
@@ -737,10 +754,11 @@ git add src/AcceptanceByCount.js src/AcceptanceByScoreThreshold.js tests/Accepta
 git commit -m "feat: add count and score acceptance policies"
 ```
 
-### Task 5: Configurar una política independiente por `Session`
+### Task PR3.3: Configurar una política independiente por `Session`
 
 **Files:**
 - Modify: `src/Session.js`
+- Modify: `src/stages/SelectionStage.js`
 - Modify: `tests/SessionSelection.test.js`
 
 - [ ] **Step 1: Agregar tests de configuración, aislamiento y regresión**
@@ -805,7 +823,7 @@ npm test -- --runInBand tests/SessionSelection.test.js
 
 Expected: FAIL porque `setAcceptancePolicy` y `acceptancePolicy` no existen.
 
-- [ ] **Step 3: Adaptar `Session` antes del refactor State**
+- [ ] **Step 3: Adaptar `Session` y `SelectionStage` para Strategy**
 
 En el constructor de `Session`, reemplazar `_acceptancePercentage` por:
 
@@ -813,7 +831,7 @@ En el constructor de `Session`, reemplazar `_acceptancePercentage` por:
 this._acceptancePolicy = new FixedAcceptanceSelector(0);
 ```
 
-Reemplazar `setAcceptancePercentage` y el uso del selector en `selectAcceptedPapers` por:
+Agregar en `Session` la configuración y la fachada porcentual:
 
 ```js
 setAcceptancePolicy(policy){
@@ -830,10 +848,15 @@ acceptancePolicy(){
 setAcceptancePercentage(percentage){
     this.setAcceptancePolicy(new FixedAcceptanceSelector(percentage));
 }
-selectAcceptedPapers(){
-    this.assertStage("Selection");
-    this._acceptedPapers = this._acceptancePolicy.select(this._papers);
-    return this._acceptedPapers;
+```
+
+Reemplazar en `src/stages/SelectionStage.js` la selección porcentual transitoria del PR 2 por:
+
+```js
+selectAcceptedPapers(session){
+    const acceptedPapers = session.acceptancePolicy().select(session.papers());
+    session._replaceAcceptedPapers(acceptedPapers);
+    return acceptedPapers;
 }
 ```
 
@@ -849,13 +872,13 @@ npm test -- --runInBand
 Expected: nuevas políticas integradas y flujo porcentual previo en verde.
 
 ```bash
-git add src/Session.js tests/SessionSelection.test.js
+git add src/Session.js src/stages/SelectionStage.js tests/SessionSelection.test.js
 git commit -m "feat: configure acceptance policy per session"
 ```
 
-### Task 6: Introducir el State base y la matriz de operaciones inválidas
+### Task PR2.1: Introducir el State base y la matriz de operaciones inválidas
 
-Esta tarea constituye la fase RED del refactor y se completa con la implementación GREEN de Task 7; no se debe commitear ni dejar la rama compartida entre ambas tareas.
+Esta tarea constituye la fase RED del refactor y se completa con la implementación GREEN de Task PR2.2; no se debe commitear ni dejar la rama compartida entre ambas tareas.
 
 **Files:**
 - Create: `src/stages/SessionStage.js`
@@ -1048,7 +1071,7 @@ _replaceAcceptedPapers(papers){
 
 Eliminar `#setStage`, `assertStage` y las ramas de etapa anteriores sólo después de que las cuatro clases concretas de las tareas siguientes estén conectadas.
 
-### Task 7: Implementar los cuatro estados concretos y preservar transiciones atómicas
+### Task PR2.2: Implementar los cuatro estados concretos y preservar transiciones atómicas
 
 **Files:**
 - Create: `src/stages/ReceivingStage.js`
@@ -1059,7 +1082,7 @@ Eliminar `#setStage`, `assertStage` y las ramas de etapa anteriores sólo despu�
 - Modify: `tests/SessionAssignment.test.js`
 - Modify: `tests/SessionReviewing.test.js`
 
-- [ ] **Step 1: Implementar Receiving sin habilitar todavía la actualización**
+- [ ] **Step 1: Implementar Receiving preservando la actualización incorporada en el PR 1**
 
 Crear `src/stages/ReceivingStage.js`:
 
@@ -1080,6 +1103,17 @@ class ReceivingStage extends SessionStage{
         }
 
         session._addPaper(paper);
+    }
+    updatePaper(session, paper, author, candidatePaper){
+        if (!session._containsPaper(paper)) {
+            throw new Error("Paper was not submitted to this session");
+        }
+
+        if (!paper.hasAuthor(author)) {
+            throw new Error("Only an author can update this paper");
+        }
+
+        paper.updateFrom(candidatePaper);
     }
     closeSubmissions(session){
         session._transitionTo(new BiddingStage());
@@ -1186,11 +1220,12 @@ class ReviewingStage extends SessionStage{
 module.exports = ReviewingStage;
 ```
 
-- [ ] **Step 4: Implementar Selection delegando exclusivamente en Strategy**
+- [ ] **Step 4: Implementar Selection preservando temporalmente la política porcentual del TP1**
 
 Crear `src/stages/SelectionStage.js`:
 
 ```js
+const FixedAcceptanceSelector = require("../FixedAcceptanceSelector");
 const SessionStage = require("./SessionStage");
 
 class SelectionStage extends SessionStage{
@@ -1198,7 +1233,11 @@ class SelectionStage extends SessionStage{
         super("Selection");
     }
     selectAcceptedPapers(session){
-        const acceptedPapers = session.acceptancePolicy().select(session.papers());
+        const selector = new FixedAcceptanceSelector();
+        const acceptedPapers = selector.select(
+            session.papers(),
+            session.acceptancePercentage()
+        );
         session._replaceAcceptedPapers(acceptedPapers);
         return acceptedPapers;
     }
@@ -1209,6 +1248,16 @@ class SelectionStage extends SessionStage{
 
 module.exports = SelectionStage;
 ```
+
+Agregar temporalmente a `Session` este accessor para preservar la implementación del TP1 sin exponer el objeto State:
+
+```js
+acceptancePercentage(){
+    return this._acceptancePercentage;
+}
+```
+
+Task PR3.3 eliminará `_acceptancePercentage` y este accessor cuando el PR 3 introduzca la Strategy configurable.
 
 - [ ] **Step 5: Conectar `Session` a `ReceivingStage`**
 
@@ -1224,7 +1273,7 @@ El constructor debe usar:
 this._stage = new ReceivingStage();
 ```
 
-Conservar en `Session` las consultas de datos, bids y asignaciones; eliminar la lógica que ahora vive en los estados.
+Conservar en `Session` las consultas de datos, bids y asignaciones; eliminar la lógica que ahora vive en los estados. En particular, reemplazar la implementación directa de `updatePaper` agregada en el PR 1 por la delegación a `_stage`, manteniendo `_containsPaper` como operación interna del contexto.
 
 - [ ] **Step 6: Reforzar que las transiciones fallidas no dejan cambios parciales**
 
@@ -1264,10 +1313,12 @@ git add src/Session.js src/stages tests/SessionStages.test.js tests/SessionAssig
 git commit -m "refactor: model session workflow with state objects"
 ```
 
-### Task 8: Habilitar actualización de papers sólo durante Recepción
+### Task PR1.3: Corregir en `Session` la actualización de papers durante Recepción
+
+Aunque esta sección se conserva cerca de los tests transversales de etapas para facilitar su lectura, se ejecuta inmediatamente después de Task PR1.2, antes de comenzar los PRs 2 y 3.
 
 **Files:**
-- Modify: `src/stages/ReceivingStage.js`
+- Modify: `src/Session.js`
 - Create: `tests/SessionPaperUpdate.test.js`
 
 - [ ] **Step 1: Crear el fixture de actualización**
@@ -1403,15 +1454,19 @@ Run:
 npm test -- --runInBand tests/SessionPaperUpdate.test.js
 ```
 
-Expected: los casos de Recepción fallan porque `ReceivingStage` hereda el rechazo por defecto.
+Expected: FAIL porque `Session.updatePaper` todavía no existe.
 
-- [ ] **Step 4: Habilitar actualización en `ReceivingStage`**
+- [ ] **Step 4: Habilitar actualización en `Session` sobre el flujo actual**
 
-Agregar a `src/stages/ReceivingStage.js`:
+Agregar a `src/Session.js`:
 
 ```js
-updatePaper(session, paper, author, candidatePaper){
-    if (!session._containsPaper(paper)) {
+updatePaper(paper, author, candidatePaper){
+    if (this.stage() !== "Receiving") {
+        throw new Error("Cannot update papers during " + this.stage() + " stage");
+    }
+
+    if (!this._papers.includes(paper)) {
         throw new Error("Paper was not submitted to this session");
     }
 
@@ -1432,14 +1487,14 @@ npm test -- --runInBand tests/SessionPaperUpdate.test.js tests/SessionStages.tes
 npm test -- --runInBand
 ```
 
-Expected: todos los casos de actualización y la matriz de etapas en verde.
+Expected: todos los casos de actualización y la suite previa en verde. El PR cierra el issue #3 sin introducir todavía State ni políticas nuevas.
 
 ```bash
-git add src/stages/ReceivingStage.js tests/SessionPaperUpdate.test.js
-git commit -m "feat: allow atomic paper updates during receiving"
+git add src/Session.js tests/SessionPaperUpdate.test.js
+git commit -m "fix: allow paper updates before the submission deadline"
 ```
 
-### Task 9: Cerrar regresiones, cobertura y calidad del cambio
+### Task Cierre.1: Cerrar regresiones, cobertura y calidad de los PRs 1 a 3
 
 **Files:**
 - Modify only if a regression is found: tests and production files listed above
@@ -1523,13 +1578,75 @@ git commit -m "test: cover tp2 workflow and regressions"
 
 No crear un commit vacío si la verificación no exigió cambios.
 
-## 6. Matriz de trazabilidad del enunciado
+### Task PR4.1: Completar documentación, diagrama y cierre del TP2
+
+**Files:**
+- Modify: `docs/DOCUMENTACION_TECNICA.md`
+- Modify: `docs/DECISIONES.md`
+- Modify only if its description or links become stale: `README.md`
+- Verify: `docs/dev-cycle/4-PLAN-TP2.md`
+
+- [ ] **Step 1: Actualizar el diagrama de clases Mermaid**
+
+Modificar el `classDiagram` de `docs/DOCUMENTACION_TECNICA.md` para representar, como mínimo:
+
+- `Session` como contexto que referencia un `SessionStage` actual y una `AcceptancePolicy`;
+- `SessionStage` y sus cuatro estados concretos;
+- las transiciones `ReceivingStage -> BiddingStage -> ReviewingStage -> SelectionStage`;
+- `AcceptancePolicy`, `FixedAcceptanceSelector`, `AcceptanceByCount` y `AcceptanceByScoreThreshold`;
+- la relación de actualización entre `Session`, `Paper`, `RegularPaper` y `Poster`.
+
+- [ ] **Step 2: Actualizar la descripción técnica del flujo**
+
+Documentar en `docs/DOCUMENTACION_TECNICA.md` las operaciones habilitadas por etapa, el cierre manual de Recepción como deadline, la actualización atómica de trabajos y la configuración independiente de políticas por sesión.
+
+- [ ] **Step 3: Registrar las decisiones de diseño**
+
+Agregar a `docs/DECISIONES.md` decisiones explícitas sobre:
+
+- elección de State frente a condicionales o una tabla central;
+- elección de Strategy para las políticas de aceptación;
+- conservación de la política porcentual como compatibilidad del TP1;
+- uso de un paper candidato validado para conservar identidad, orden y última versión válida;
+- alcance manual del deadline, sin reloj ni scheduler.
+
+- [ ] **Step 4: Verificar enlaces y consistencia documental**
+
+Run:
+
+```bash
+rg -n 'DOCUMENTACION_TECNICA|DECISIONES|classDiagram|SessionStage|AcceptancePolicy' README.md docs
+git diff --check
+```
+
+Expected: el README no contiene enlaces rotos hacia los documentos modificados, el diagrama menciona State y Strategy, y `git diff --check` no produce salida.
+
+- [ ] **Step 5: Ejecutar la verificación final de entrega**
+
+Run:
+
+```bash
+npm test -- --runInBand --coverage
+```
+
+Expected: todas las suites y tests pasan; statements, branches, functions y lines permanecen en al menos 80%.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add docs/DOCUMENTACION_TECNICA.md docs/DECISIONES.md README.md docs/dev-cycle/4-PLAN-TP2.md
+git commit -m "docs: complete tp2 design deliverables"
+```
+
+Si `README.md` no requirió cambios, omitirlo del `git add`.
+
+## 7. Matriz de trazabilidad del enunciado
 
 | Requisito TP2 | Diseño | Tests principales |
 |---|---|---|
 | Operaciones definidas por etapa | State y rechazo por defecto | `SessionStages.test.js` |
 | Errores descriptivos en etapa inválida | `SessionStage.reject` | `SessionStages.test.js` |
-| Sin condicional central en `Session` | Delegación polimórfica | búsqueda `rg` de Task 9 |
+| Sin condicional central en `Session` | Delegación polimórfica | búsqueda `rg` de Task Cierre.1 |
 | Transición fallida sin cambios parciales | cálculo antes de commit | `SessionAssignment.test.js`, `SessionReviewing.test.js` |
 | Autor actualiza durante Recepción | `ReceivingStage.updatePaper` | `SessionPaperUpdate.test.js` |
 | Sólo autores y papers de la sesión | validaciones previas | `SessionPaperUpdate.test.js` |
@@ -1542,9 +1659,11 @@ No crear un commit vacío si la verificación no exigió cambios.
 | Empates deterministas | orden estable compartido | tests de las tres políticas |
 | Políticas aisladas por sesión | instancia en cada `Session` | `SessionSelection.test.js` |
 | Selección sólo en Selection | `SelectionStage` | `SessionStages.test.js` |
-| Cobertura mínima 80% | verificación Jest final | Task 9 |
+| Cobertura mínima 80% | verificación Jest final | Tasks Cierre.1 y PR4.1 |
+| Diagrama de clases actualizado | Mermaid con State y Strategy | Task PR4.1 |
+| Documento de decisiones actualizado | decisiones de flujo, políticas y actualización | Task PR4.1 |
 
-## 7. Criterio de finalización
+## 8. Criterio de finalización
 
 La implementación se considera terminada únicamente cuando:
 
@@ -1555,4 +1674,5 @@ La implementación se considera terminada únicamente cuando:
 5. dos sesiones con políticas distintas producen resultados independientes;
 6. una actualización inválida o posterior al deadline conserva la última versión válida;
 7. `Session.js` no contiene condicionales que despachen comportamiento según la etapa;
-8. el diff no incluye documentación, diagramas, demo ni cambios de dependencias.
+8. los diffs de los PRs 1 a 3 no incluyen documentación, diagramas, demo ni cambios de dependencias;
+9. el PR 4 actualiza el diagrama de clases y los documentos de decisiones y diseño para reflejar el resultado implementado.
