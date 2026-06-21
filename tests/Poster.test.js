@@ -1,4 +1,5 @@
 const Poster = require("../src/Poster");
+const RegularPaper = require("../src/RegularPaper");
 const User = require('../src/User');
 
 let juan, julian, matias;
@@ -39,5 +40,33 @@ describe("A Poster", ()=>{
     it("should be invalid without a title", ()=>{
         const noTitle = new Poster("", [juan], juan, "https://example.com/p.pdf", "https://example.com/s.zip");
         expect(noTitle.isValid()).toBe(false);
+    });
+    it("should copy poster-specific URLs from a valid poster", function shouldCopyPosterUrls() {
+        const candidate = new Poster(
+            "Updated poster",
+            [julian, juan],
+            julian,
+            "https://example.com/updated.pdf",
+            "https://example.com/updated.zip"
+        );
+
+        poster01.updateFrom(candidate);
+
+        expect(poster01.attachmentUrl()).toBe("https://example.com/updated.pdf");
+        expect(poster01.sourcesUrl()).toBe("https://example.com/updated.zip");
+    });
+    it("should reject changing the concrete paper type", function shouldRejectTypeChange() {
+        const regularCandidate = new RegularPaper(
+            "Regular replacement",
+            [juan],
+            juan,
+            "Valid abstract"
+        );
+
+        function updatePosterAsRegularPaper() {
+            poster01.updateFrom(regularCandidate);
+        }
+
+        expect(updatePosterAsRegularPaper).toThrow("Updated paper must keep its type");
     });
 });

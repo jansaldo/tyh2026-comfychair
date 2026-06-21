@@ -44,4 +44,43 @@ describe("A Paper", ()=>{
 
         expect(duplicateReview).toThrow("Reviewer already reviewed this paper");
     });
+    it("should copy editable common data from a valid candidate", function shouldCopyCommonData() {
+        const newAuthor = new User();
+        const candidate = new Paper("Updated title", [matias, newAuthor], matias);
+
+        paper.updateFrom(candidate);
+
+        expect(paper.title()).toBe("Updated title");
+        expect(paper.authors()).toEqual([matias, newAuthor]);
+        expect(paper.correspondingAuthor()).toBe(matias);
+    });
+    it("should preserve reviews when editable data changes", function shouldPreserveReviews() {
+        paper.addReview(julian, "Existing review", 2);
+        const candidate = new Paper("Updated title", [juan, matias], juan);
+
+        paper.updateFrom(candidate);
+
+        expect(paper.reviews()).toHaveLength(1);
+        expect(paper.score()).toBe(2);
+    });
+    it("should reject an invalid candidate without changing valid data", function shouldRejectInvalidCandidateAtomically() {
+        const previousAuthors = paper.authors().slice();
+        const candidate = new Paper("", [julian], julian);
+
+        function updateWithInvalidCandidate() {
+            paper.updateFrom(candidate);
+        }
+
+        expect(updateWithInvalidCandidate).toThrow("Cannot update paper with invalid data");
+        expect(paper.title()).toBe("A Systematic Literature Review");
+        expect(paper.authors()).toEqual(previousAuthors);
+        expect(paper.correspondingAuthor()).toBe(juan);
+    });
+    it("should reject using itself as update candidate", function shouldRejectSameObjectCandidate() {
+        function updateFromItself() {
+            paper.updateFrom(paper);
+        }
+
+        expect(updateFromItself).toThrow("Updated paper must be a different object");
+    });
 })

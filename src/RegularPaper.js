@@ -17,6 +17,9 @@ class RegularPaper extends Paper{
     isValid(){
         return super.isValid() && (this.abstractWordCount() <= 300)
     }
+    copySpecificEditableDataFrom(candidatePaper){
+        this._abstract = candidatePaper.abstract();
+    }
 }
 
 module.exports = RegularPaper;
