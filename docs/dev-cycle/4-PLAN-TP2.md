@@ -46,7 +46,7 @@ Los PRs se implementarán y mergearán en este orden. Cada casillero se marca co
 
 - [x] **PR 1 — `fix`: permitir actualizar envíos hasta el cierre de Recepción (`#3`).** A cargo nuestro. Rama: `fix/issue-3-update-paper-before-deadline`. Incluye el protocolo atómico de actualización, autorización por autor, pertenencia a la sesión, conservación de identidad y orden, rechazo después del cierre y sus tests. Se clasifica como `fix` porque el TP1 ya exigía que “Los envíos pueden modificarse hasta el cierre de la etapa” y la implementación no lo contempló.
 - [x] **PR 2 — `refactor`: modelar el flujo de la sesión con State.** A cargo nuestro. Rama: `refactor/session-state-workflow`. Parte del PR 1 ya mergeado, elimina el despacho condicional por etapa, migra la regla de actualización a `ReceivingStage`, preserva las APIs del TP1 y prueba operaciones inválidas y transiciones atómicas.
-- [ ] **PR 3 — `feat`: incorporar políticas configurables de aceptación.** A cargo nuestro. Rama: `feat/configurable-acceptance-policies`. Parte del PR 2 ya mergeado, conserva la política porcentual e incorpora `AcceptanceByCount`, `AcceptanceByScoreThreshold` y configuración independiente por sesión mediante Strategy.
+- [x] **PR 3 — `feat`: incorporar políticas configurables de aceptación.** A cargo nuestro. Rama: `feat/configurable-acceptance-policies`. Parte del PR 2 ya mergeado, conserva la política porcentual e incorpora `AcceptanceByCount`, `AcceptanceByScoreThreshold` y configuración independiente por sesión mediante Strategy.
 - [ ] **PR 4 — `docs`: completar entregables y cierre del TP2.**. Rama sugerida: `docs/tp2-deliverables`. Debe actualizar el diagrama de clases y los documentos de decisiones/diseño para reflejar State y Strategy, revisar la documentación técnica y ejecutar la verificación final de entregables y cobertura.
 
 Orden de ejecución de las tareas detalladas de este documento:
@@ -429,7 +429,7 @@ git commit -m "fix: support atomic paper data updates"
 - Modify: `src/FixedAcceptanceSelector.js`
 - Create: `tests/FixedAcceptanceSelector.test.js`
 
-- [ ] **Step 1: Escribir la regresión unitaria de la política porcentual**
+- [x] **Step 1: Escribir la regresión unitaria de la política porcentual**
 
 Crear `tests/FixedAcceptanceSelector.test.js`:
 
@@ -486,7 +486,7 @@ describe("FixedAcceptanceSelector", function fixedAcceptanceSelectorSuite() {
 });
 ```
 
-- [ ] **Step 2: Ejecutar y comprobar que falla la configuración por constructor**
+- [x] **Step 2: Ejecutar y comprobar que falla la configuración por constructor**
 
 Run:
 
@@ -496,7 +496,7 @@ npm test -- --runInBand tests/FixedAcceptanceSelector.test.js
 
 Expected: FAIL en el caso que invoca `select(papers)` sobre un selector configurado.
 
-- [ ] **Step 3: Crear `AcceptancePolicy` con ordenamiento estable reutilizable**
+- [x] **Step 3: Crear `AcceptancePolicy` con ordenamiento estable reutilizable**
 
 Crear `src/AcceptancePolicy.js`:
 
@@ -534,7 +534,7 @@ class AcceptancePolicy{
 module.exports = AcceptancePolicy;
 ```
 
-- [ ] **Step 4: Convertir `FixedAcceptanceSelector` en Strategy compatible**
+- [x] **Step 4: Convertir `FixedAcceptanceSelector` en Strategy compatible**
 
 Reemplazar `src/FixedAcceptanceSelector.js` por:
 
@@ -568,7 +568,7 @@ class FixedAcceptanceSelector extends AcceptancePolicy{
 module.exports = FixedAcceptanceSelector;
 ```
 
-- [ ] **Step 5: Verificar y commitear**
+- [x] **Step 5: Verificar y commitear**
 
 Run:
 
@@ -592,7 +592,7 @@ git commit -m "refactor: expose percentage selection as a policy"
 - Create: `tests/AcceptanceByCount.test.js`
 - Create: `tests/AcceptanceByScoreThreshold.test.js`
 
-- [ ] **Step 1: Escribir los tests fallidos de `AcceptanceByCount`**
+- [x] **Step 1: Escribir los tests fallidos de `AcceptanceByCount`**
 
 Crear `tests/AcceptanceByCount.test.js` usando el helper `paperWithScore` de la tarea anterior y estos casos:
 
@@ -637,7 +637,7 @@ it("should reject a negative or fractional maximum", function shouldRejectInvali
 
 El archivo debe importar `AcceptanceByCount`, `Paper` y `User`, inicializar `author` y `reviewer` en `beforeEach`, y definir `paperWithScore(title, score)` exactamente como en `tests/FixedAcceptanceSelector.test.js`.
 
-- [ ] **Step 2: Escribir los tests fallidos de `AcceptanceByScoreThreshold`**
+- [x] **Step 2: Escribir los tests fallidos de `AcceptanceByScoreThreshold`**
 
 Crear `tests/AcceptanceByScoreThreshold.test.js` con el mismo fixture y:
 
@@ -670,7 +670,7 @@ it("should reject a non finite threshold", function shouldRejectInvalidThreshold
 });
 ```
 
-- [ ] **Step 3: Ejecutar y comprobar RED**
+- [x] **Step 3: Ejecutar y comprobar RED**
 
 Run:
 
@@ -680,7 +680,7 @@ npm test -- --runInBand tests/AcceptanceByCount.test.js tests/AcceptanceByScoreT
 
 Expected: FAIL porque ambos módulos faltan.
 
-- [ ] **Step 4: Implementar `AcceptanceByCount`**
+- [x] **Step 4: Implementar `AcceptanceByCount`**
 
 Crear `src/AcceptanceByCount.js`:
 
@@ -705,7 +705,7 @@ class AcceptanceByCount extends AcceptancePolicy{
 module.exports = AcceptanceByCount;
 ```
 
-- [ ] **Step 5: Implementar `AcceptanceByScoreThreshold`**
+- [x] **Step 5: Implementar `AcceptanceByScoreThreshold`**
 
 Crear `src/AcceptanceByScoreThreshold.js`:
 
@@ -739,7 +739,7 @@ class AcceptanceByScoreThreshold extends AcceptancePolicy{
 module.exports = AcceptanceByScoreThreshold;
 ```
 
-- [ ] **Step 6: Verificar y commitear**
+- [x] **Step 6: Verificar y commitear**
 
 Run:
 
@@ -761,7 +761,7 @@ git commit -m "feat: add count and score acceptance policies"
 - Modify: `src/stages/SelectionStage.js`
 - Modify: `tests/SessionSelection.test.js`
 
-- [ ] **Step 1: Agregar tests de configuración, aislamiento y regresión**
+- [x] **Step 1: Agregar tests de configuración, aislamiento y regresión**
 
 Agregar imports a `tests/SessionSelection.test.js`:
 
@@ -813,7 +813,7 @@ it("should keep percentage configuration as a compatibility facade", function sh
 });
 ```
 
-- [ ] **Step 2: Ejecutar y comprobar RED**
+- [x] **Step 2: Ejecutar y comprobar RED**
 
 Run:
 
@@ -823,7 +823,7 @@ npm test -- --runInBand tests/SessionSelection.test.js
 
 Expected: FAIL porque `setAcceptancePolicy` y `acceptancePolicy` no existen.
 
-- [ ] **Step 3: Adaptar `Session` y `SelectionStage` para Strategy**
+- [x] **Step 3: Adaptar `Session` y `SelectionStage` para Strategy**
 
 En el constructor de `Session`, reemplazar `_acceptancePercentage` por:
 
@@ -860,7 +860,7 @@ selectAcceptedPapers(session){
 }
 ```
 
-- [ ] **Step 4: Verificar y commitear**
+- [x] **Step 4: Verificar y commitear**
 
 Run:
 
@@ -1500,7 +1500,7 @@ git commit -m "fix: allow paper updates before the submission deadline"
 - Modify only if a regression is found: tests and production files listed above
 - Do not modify: documentation, demo, package metadata
 
-- [ ] **Step 1: Ejecutar cada área focalizada**
+- [x] **Step 1: Ejecutar cada área focalizada**
 
 Run:
 
@@ -1514,7 +1514,7 @@ npm test -- --runInBand tests/SessionWorkflow.test.js tests/Demo.test.js
 
 Expected: cero tests fallidos en cada grupo.
 
-- [ ] **Step 2: Ejecutar suite y cobertura completas**
+- [x] **Step 2: Ejecutar suite y cobertura completas**
 
 Run:
 
@@ -1533,7 +1533,7 @@ Functions:  >= 80%
 Lines:      >= 80%
 ```
 
-- [ ] **Step 3: Inspeccionar condiciones centralizadas prohibidas**
+- [x] **Step 3: Inspeccionar condiciones centralizadas prohibidas**
 
 Run:
 
@@ -1543,7 +1543,7 @@ rg '_stage\s*===|_stage\s*==|stage\(\)\s*===|stage\(\)\s*==' src/Session.js src/
 
 Expected: sin resultados. `Session` sólo delega; los estados concretos no preguntan cuál es la etapa actual.
 
-- [ ] **Step 4: Comprobar que no se introdujeron callbacks anónimos en producción**
+- [x] **Step 4: Comprobar que no se introdujeron callbacks anónimos en producción**
 
 Run:
 
@@ -1553,7 +1553,7 @@ rg '=>|function\s*\(' src/Session.js src/Paper.js src/RegularPaper.js src/Poster
 
 Expected: sin funciones flecha ni funciones anónimas nuevas en los archivos productivos tocados.
 
-- [ ] **Step 5: Revisar el diff acotado**
+- [x] **Step 5: Revisar el diff acotado**
 
 Run:
 
