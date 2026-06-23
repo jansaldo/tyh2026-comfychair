@@ -37,5 +37,36 @@ describe("A RegularPaper", ()=>{
         paper01.setAbstract(abstract)
         expect(paper01.isValid()).toBe(false);
     });
+    it("should copy an updated abstract from a valid regular paper", function shouldCopyUpdatedAbstract() {
+        const candidate = new RegularPaper(
+            "Updated regular paper",
+            [juan, julian],
+            julian,
+            "Updated abstract"
+        );
+
+        paper01.updateFrom(candidate);
+
+        expect(paper01.title()).toBe("Updated regular paper");
+        expect(paper01.abstract()).toBe("Updated abstract");
+    });
+    it("should reject an overlong abstract without partial changes", function shouldRejectOverlongAbstractAtomically() {
+        const originalTitle = paper01.title();
+        const originalAbstract = paper01.abstract();
+        const candidate = new RegularPaper(
+            "Invalid replacement title",
+            [juan, julian],
+            juan,
+            new Array(302).join("word ")
+        );
+
+        function updateWithOverlongAbstract() {
+            paper01.updateFrom(candidate);
+        }
+
+        expect(updateWithOverlongAbstract).toThrow("Cannot update paper with invalid data");
+        expect(paper01.title()).toBe(originalTitle);
+        expect(paper01.abstract()).toBe(originalAbstract);
+    });
 
 })

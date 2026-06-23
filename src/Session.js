@@ -39,6 +39,21 @@ class Session{
         else
             throw new Error("Cannot submit papers at this stage");
     }
+    updatePaper(paper, author, candidatePaper){
+        if (this.stage() !== "Receiving") {
+            throw new Error("Cannot update papers during " + this.stage() + " stage");
+        }
+
+        if (!this._papers.includes(paper)) {
+            throw new Error("Paper was not submitted to this session");
+        }
+
+        if (!paper.hasAuthor(author)) {
+            throw new Error("Only an author can update this paper");
+        }
+
+        paper.updateFrom(candidatePaper);
+    }
     papers(){
         return this._papers;
     }

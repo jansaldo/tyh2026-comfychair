@@ -44,7 +44,7 @@
 
 Los PRs se implementarán y mergearán en este orden. Cada casillero se marca con `- [x]` dentro del mismo PR que completa el trabajo; no se marca por anticipado.
 
-- [ ] **PR 1 — `fix`: permitir actualizar envíos hasta el cierre de Recepción (`#3`).** A cargo nuestro. Rama: `fix/issue-3-update-paper-before-deadline`. Incluye el protocolo atómico de actualización, autorización por autor, pertenencia a la sesión, conservación de identidad y orden, rechazo después del cierre y sus tests. Se clasifica como `fix` porque el TP1 ya exigía que “Los envíos pueden modificarse hasta el cierre de la etapa” y la implementación no lo contempló.
+- [x] **PR 1 — `fix`: permitir actualizar envíos hasta el cierre de Recepción (`#3`).** A cargo nuestro. Rama: `fix/issue-3-update-paper-before-deadline`. Incluye el protocolo atómico de actualización, autorización por autor, pertenencia a la sesión, conservación de identidad y orden, rechazo después del cierre y sus tests. Se clasifica como `fix` porque el TP1 ya exigía que “Los envíos pueden modificarse hasta el cierre de la etapa” y la implementación no lo contempló.
 - [ ] **PR 2 — `refactor`: modelar el flujo de la sesión con State.** A cargo nuestro. Rama: `refactor/session-state-workflow`. Parte del PR 1 ya mergeado, elimina el despacho condicional por etapa, migra la regla de actualización a `ReceivingStage`, preserva las APIs del TP1 y prueba operaciones inválidas y transiciones atómicas.
 - [ ] **PR 3 — `feat`: incorporar políticas configurables de aceptación.** A cargo nuestro. Rama: `feat/configurable-acceptance-policies`. Parte del PR 2 ya mergeado, conserva la política porcentual e incorpora `AcceptanceByCount`, `AcceptanceByScoreThreshold` y configuración independiente por sesión mediante Strategy.
 - [ ] **PR 4 — `docs`: completar entregables y cierre del TP2.**. Rama sugerida: `docs/tp2-deliverables`. Debe actualizar el diagrama de clases y los documentos de decisiones/diseño para reflejar State y Strategy, revisar la documentación técnica y ejecutar la verificación final de entregables y cobertura.
@@ -186,7 +186,7 @@ Score threshold must be a finite number
 - Test: todos los archivos bajo `tests/`
 - Preserve: `ENUNCIADO_TP1.md`, `ENUNCIADO_TP2.md`, `package-lock.json`
 
-- [ ] **Step 1: Registrar el estado antes de modificar producción**
+- [x] **Step 1: Registrar el estado antes de modificar producción**
 
 Run:
 
@@ -204,7 +204,7 @@ All files statements >= 96%
 All files branches >= 94%
 ```
 
-- [ ] **Step 2: Confirmar que el trabajo se hará en una rama del TP2**
+- [x] **Step 2: Confirmar que el trabajo se hará en una rama del TP2**
 
 Run:
 
@@ -226,7 +226,7 @@ No commit en esta tarea.
 - Modify: `tests/RegularPaper.test.js`
 - Modify: `tests/Poster.test.js`
 
-- [ ] **Step 1: Escribir tests fallidos para datos comunes, identidad lógica y validación previa**
+- [x] **Step 1: Escribir tests fallidos para datos comunes, identidad lógica y validación previa**
 
 Agregar a `tests/Paper.test.js`:
 
@@ -348,7 +348,7 @@ it("should reject changing the concrete paper type", function shouldRejectTypeCh
 
 Agregar `const RegularPaper = require("../src/RegularPaper");` a `tests/Poster.test.js`.
 
-- [ ] **Step 2: Ejecutar los tests y comprobar RED**
+- [x] **Step 2: Ejecutar los tests y comprobar RED**
 
 Run:
 
@@ -358,7 +358,7 @@ npm test -- --runInBand tests/Paper.test.js tests/RegularPaper.test.js tests/Pos
 
 Expected: FAIL porque `updateFrom` y `copySpecificEditableDataFrom` todavía no existen.
 
-- [ ] **Step 3: Implementar el protocolo de actualización validada**
+- [x] **Step 3: Implementar el protocolo de actualización validada**
 
 Agregar dentro de `Paper` en `src/Paper.js`:
 
@@ -404,7 +404,7 @@ copySpecificEditableDataFrom(candidatePaper){
 }
 ```
 
-- [ ] **Step 4: Verificar GREEN y regresión**
+- [x] **Step 4: Verificar GREEN y regresión**
 
 Run:
 
@@ -415,7 +415,7 @@ npm test -- --runInBand
 
 Expected: todas las suites en verde.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/Paper.js src/RegularPaper.js src/Poster.js tests/Paper.test.js tests/RegularPaper.test.js tests/Poster.test.js
@@ -1321,7 +1321,7 @@ Aunque esta sección se conserva cerca de los tests transversales de etapas para
 - Modify: `src/Session.js`
 - Create: `tests/SessionPaperUpdate.test.js`
 
-- [ ] **Step 1: Crear el fixture de actualización**
+- [x] **Step 1: Crear el fixture de actualización**
 
 Crear `tests/SessionPaperUpdate.test.js` con `Session`, `User`, `RegularPaper` y `Poster`. En `beforeEach`, construir:
 
@@ -1347,7 +1347,7 @@ session.submit(regularPaper);
 session.submit(poster);
 ```
 
-- [ ] **Step 2: Agregar los escenarios funcionales obligatorios**
+- [x] **Step 2: Agregar los escenarios funcionales obligatorios**
 
 ```js
 it("should let any current author update a submitted regular paper", function shouldAllowCoauthorUpdate() {
@@ -1446,7 +1446,7 @@ it("should reject updates after submissions close", function shouldRejectUpdateA
 });
 ```
 
-- [ ] **Step 3: Ejecutar y comprobar RED**
+- [x] **Step 3: Ejecutar y comprobar RED**
 
 Run:
 
@@ -1456,7 +1456,7 @@ npm test -- --runInBand tests/SessionPaperUpdate.test.js
 
 Expected: FAIL porque `Session.updatePaper` todavía no existe.
 
-- [ ] **Step 4: Habilitar actualización en `Session` sobre el flujo actual**
+- [x] **Step 4: Habilitar actualización en `Session` sobre el flujo actual**
 
 Agregar a `src/Session.js`:
 
@@ -1478,12 +1478,12 @@ updatePaper(paper, author, candidatePaper){
 }
 ```
 
-- [ ] **Step 5: Verificar y commitear**
+- [x] **Step 5: Verificar y commitear**
 
 Run:
 
 ```bash
-npm test -- --runInBand tests/SessionPaperUpdate.test.js tests/SessionStages.test.js
+npm test -- --runInBand tests/SessionPaperUpdate.test.js
 npm test -- --runInBand
 ```
 

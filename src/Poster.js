@@ -12,6 +12,10 @@ class Poster extends Paper{
     sourcesUrl(){
         return this._sourcesUrl;
     }
+    copySpecificEditableDataFrom(candidatePaper){
+        this._attachmentUrl = candidatePaper.attachmentUrl();
+        this._sourcesUrl = candidatePaper.sourcesUrl();
+    }
 }
 
 module.exports = Poster;

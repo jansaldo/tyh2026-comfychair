@@ -47,6 +47,28 @@ class Paper{
     reviewsCount(){
         return this.reviews().length;
     }
+    updateFrom(candidatePaper){
+        this.assertValidUpdateCandidate(candidatePaper);
+        this._title = candidatePaper.title();
+        this._authors = candidatePaper.authors().slice();
+        this._correspondingAuthor = candidatePaper.correspondingAuthor();
+        this.copySpecificEditableDataFrom(candidatePaper);
+    }
+    assertValidUpdateCandidate(candidatePaper){
+        if (candidatePaper === this) {
+            throw new Error("Updated paper must be a different object");
+        }
+
+        if (candidatePaper.constructor !== this.constructor) {
+            throw new Error("Updated paper must keep its type");
+        }
+
+        if (!candidatePaper.isValid()) {
+            throw new Error("Cannot update paper with invalid data");
+        }
+    }
+    copySpecificEditableDataFrom(candidatePaper){
+    }
     score(){
         if (this.reviewsCount() === 0){
             return 0;
