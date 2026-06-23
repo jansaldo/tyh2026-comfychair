@@ -1,4 +1,6 @@
-const ReceivingStage = require("./stages/ReceivingStage");
+const {Bid, Interests} = require("./Bid");
+const FixedAcceptanceSelector = require("./FixedAcceptanceSelector");
+const ReviewerAssigner = require("./ReviewerAssigner");
 
 class Session{
     constructor(){
@@ -8,7 +10,7 @@ class Session{
         this._bids=[];
         this._assignments=[];
         this._acceptedPapers=[];
-        this._stage=new ReceivingStage();
+        this._stage="Receiving";
         this._acceptancePercentage=0;
     }
     name(){
@@ -24,13 +26,33 @@ class Session{
         this._programCommittee.push(user);
     }
     canSubmit(paper){
-        return this._stage.canSubmit(paper);
+        if (this.stage() == "Receiving" )
+            return paper.isValid();
+        else 
+            return false;
     }
     submit(paper){
-        return this._stage.submit(this, paper);
+        if (!this.canSubmit(paper)) throw new Error("Cannot submit invalid paper");
+        
+        if (this.stage() == "Receiving" )
+            this._papers.push(paper);
+        else
+            throw new Error("Cannot submit papers at this stage");
     }
     updatePaper(paper, author, candidatePaper){
-        return this._stage.updatePaper(this, paper, author, candidatePaper);
+        if (this.stage() !== "Receiving") {
+            throw new Error("Cannot update papers during " + this.stage() + " stage");
+        }
+
+        if (!this._papers.includes(paper)) {
+            throw new Error("Paper was not submitted to this session");
+        }
+
+        if (!paper.hasAuthor(author)) {
+            throw new Error("Only an author can update this paper");
+        }
+
+        paper.updateFrom(candidatePaper);
     }
     papers(){
         return this._papers;
@@ -39,16 +61,40 @@ class Session{
         return this._bids;
     }
     stage(){
-        return this._stage.name();
+        return this._stage;
+    }
+    #setStage(stage){
+        this._stage = stage;
     }
     closeSubmissions(){
-        return this._stage.closeSubmissions(this);
+        this.#setStage("Bidding");
+    }
+    assertStage(expectedStage){
+        if (this.stage() !== expectedStage) {
+            throw new Error("Session must be at stage " + expectedStage);
+        }
     }
     enterBid(paper, reviewer, interest){
-        return this._stage.enterBid(this, paper, reviewer, interest);
+        if (this.stage() == "Bidding" )
+            if(this.bidExistsFor(paper, reviewer)){
+                let existing =  this.bidFor(paper, reviewer);
+                existing.setInterest(interest);
+            }
+            else{
+                let bid = new Bid(paper, reviewer, interest);
+                this._bids.push(bid);
+            }
+        else
+            throw new Error("Cannot enter bids from the current stage.");
     }
     closeBidding(){
-        return this._stage.closeBidding(this);
+        this.assertStage("Bidding");
+
+        const assigner = new ReviewerAssigner();
+        const assignments = assigner.assign(this._papers, this._programCommittee, this._bids);
+
+        this._assignments = assignments;
+        this.#setStage("Reviewing");
     }
     assignedReviewersFor(paper){
         const assignedReviewers = [];
@@ -71,10 +117,46 @@ class Session{
         return false;
     }
     submitReview(paper, reviewer, text, score){
-        return this._stage.submitReview(this, paper, reviewer, text, score);
+        this.assertStage("Reviewing");
+
+        if (!this.isReviewerAssignedTo(paper, reviewer)) {
+            throw new Error("Reviewer is not assigned to this paper");
+        }
+
+        paper.addReview(reviewer, text, score);
     }
     closeReviewing(){
-        return this._stage.closeReviewing(this);
+        this.assertStage("Reviewing");
+
+        if (!this.allReviewsSubmitted()) {
+            throw new Error("Cannot close reviewing before all assigned reviews are submitted");
+        }
+
+        this.#setStage("Selection");
+    }
+    allReviewsSubmitted(){
+        for (const paper of this._papers) {
+            if (!this.#allAssignedReviewsSubmittedFor(paper)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+    #allAssignedReviewsSubmittedFor(paper){
+        const assignedReviewers = this.assignedReviewersFor(paper);
+
+        if (assignedReviewers.length !== paper.constructor.allowedReviews) {
+            return false;
+        }
+
+        for (const reviewer of assignedReviewers) {
+            if (!paper.hasReviewFrom(reviewer)) {
+                return false;
+            }
+        }
+
+        return true;
     }
     setAcceptancePercentage(percentage){
         if (!Number.isInteger(percentage) || percentage < 0 || percentage > 100) {
@@ -83,14 +165,16 @@ class Session{
 
         this._acceptancePercentage = percentage;
     }
-    acceptancePercentage(){
-        return this._acceptancePercentage;
-    }
     selectAcceptedPapers(){
-        return this._stage.selectAcceptedPapers(this);
+        this.assertStage("Selection");
+
+        const selector = new FixedAcceptanceSelector();
+        this._acceptedPapers = selector.select(this._papers, this._acceptancePercentage);
+
+        return this._acceptedPapers;
     }
     acceptedPapers(){
-        return this._stage.acceptedPapers(this);
+        return this._acceptedPapers;
     }
     bidExistsFor(paper, reviewer){
         return typeof(this.bidFor(paper, reviewer)) != "undefined";
@@ -113,24 +197,6 @@ class Session{
         }
 
         return bid.interest();
-    }
-    _transitionTo(stage){
-        this._stage = stage;
-    }
-    _addPaper(paper){
-        this._papers.push(paper);
-    }
-    _containsPaper(paper){
-        return this._papers.includes(paper);
-    }
-    _addBid(bid){
-        this._bids.push(bid);
-    }
-    _replaceAssignments(assignments){
-        this._assignments = assignments;
-    }
-    _replaceAcceptedPapers(papers){
-        this._acceptedPapers = papers;
     }
 }
 

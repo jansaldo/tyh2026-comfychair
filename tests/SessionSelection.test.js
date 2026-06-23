@@ -101,7 +101,7 @@ describe("A Session during selection", function sessionSelectionSuite() {
             session.selectAcceptedPapers();
         }
 
-        expect(selectTooEarly).toThrow("Cannot select accepted papers during Receiving stage");
+        expect(selectTooEarly).toThrow("Session must be at stage Selection");
     });
 
     it("should reject invalid acceptance percentages", function shouldRejectInvalidPercentage() {

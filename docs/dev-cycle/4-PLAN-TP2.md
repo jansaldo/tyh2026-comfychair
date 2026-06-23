@@ -45,7 +45,7 @@
 Los PRs se implementarán y mergearán en este orden. Cada casillero se marca con `- [x]` dentro del mismo PR que completa el trabajo; no se marca por anticipado.
 
 - [x] **PR 1 — `fix`: permitir actualizar envíos hasta el cierre de Recepción (`#3`).** A cargo nuestro. Rama: `fix/issue-3-update-paper-before-deadline`. Incluye el protocolo atómico de actualización, autorización por autor, pertenencia a la sesión, conservación de identidad y orden, rechazo después del cierre y sus tests. Se clasifica como `fix` porque el TP1 ya exigía que “Los envíos pueden modificarse hasta el cierre de la etapa” y la implementación no lo contempló.
-- [x] **PR 2 — `refactor`: modelar el flujo de la sesión con State.** A cargo nuestro. Rama: `refactor/session-state-workflow`. Parte del PR 1 ya mergeado, elimina el despacho condicional por etapa, migra la regla de actualización a `ReceivingStage`, preserva las APIs del TP1 y prueba operaciones inválidas y transiciones atómicas.
+- [ ] **PR 2 — `refactor`: modelar el flujo de la sesión con State.** A cargo nuestro. Rama: `refactor/session-state-workflow`. Parte del PR 1 ya mergeado, elimina el despacho condicional por etapa, migra la regla de actualización a `ReceivingStage`, preserva las APIs del TP1 y prueba operaciones inválidas y transiciones atómicas.
 - [ ] **PR 3 — `feat`: incorporar políticas configurables de aceptación.** A cargo nuestro. Rama: `feat/configurable-acceptance-policies`. Parte del PR 2 ya mergeado, conserva la política porcentual e incorpora `AcceptanceByCount`, `AcceptanceByScoreThreshold` y configuración independiente por sesión mediante Strategy.
 - [ ] **PR 4 — `docs`: completar entregables y cierre del TP2.**. Rama sugerida: `docs/tp2-deliverables`. Debe actualizar el diagrama de clases y los documentos de decisiones/diseño para reflejar State y Strategy, revisar la documentación técnica y ejecutar la verificación final de entregables y cobertura.
 
@@ -887,7 +887,7 @@ Esta tarea constituye la fase RED del refactor y se completa con la implementaci
 - Modify: `tests/SessionReviewing.test.js`
 - Modify: `tests/SessionSelection.test.js`
 
-- [x] **Step 1: Crear una prueba parametrizada desde la API pública**
+- [ ] **Step 1: Crear una prueba parametrizada desde la API pública**
 
 Crear `tests/SessionStages.test.js`. El fixture debe construir una sesión con un paper y cuatro revisores, y disponer de helpers `moveToBidding`, `moveToReviewing` y `moveToSelection`. Definir estas operaciones exactas:
 
@@ -937,7 +937,7 @@ for (const stageName of ["Receiving", "Bidding", "Reviewing", "Selection"]) {
 
 `operationCasesForStage(stageName)` debe crear una sesión nueva, llevarla a la etapa pedida y adjuntar `session` a cada caso antes de devolverlo. Para Selection debe enviar una review por cada reviewer asignado y luego cerrar Reviewing. No reutilizar una sesión mutada entre casos.
 
-- [x] **Step 2: Actualizar expectativas existentes de error**
+- [ ] **Step 2: Actualizar expectativas existentes de error**
 
 En `tests/SessionReviewing.test.js`:
 
@@ -951,7 +951,7 @@ En `tests/SessionSelection.test.js`:
 expect(selectTooEarly).toThrow("Cannot select accepted papers during Receiving stage");
 ```
 
-- [x] **Step 3: Ejecutar y comprobar RED útil**
+- [ ] **Step 3: Ejecutar y comprobar RED útil**
 
 Run:
 
@@ -961,7 +961,7 @@ npm test -- --runInBand tests/SessionStages.test.js tests/SessionReviewing.test.
 
 Expected: FAIL porque varias transiciones hoy pueden invocarse desde etapas incorrectas y los errores actuales no identifican operación y etapa.
 
-- [x] **Step 4: Crear el State base**
+- [ ] **Step 4: Crear el State base**
 
 Crear `src/stages/SessionStage.js`:
 
@@ -1011,7 +1011,7 @@ class SessionStage{
 module.exports = SessionStage;
 ```
 
-- [x] **Step 5: Convertir `Session` en contexto delegador**
+- [ ] **Step 5: Convertir `Session` en contexto delegador**
 
 En `src/Session.js`, reemplazar el string inicial por `new ReceivingStage()` y hacer que estas APIs no contengan validaciones de etapa:
 
@@ -1082,7 +1082,7 @@ Eliminar `#setStage`, `assertStage` y las ramas de etapa anteriores sólo despu�
 - Modify: `tests/SessionAssignment.test.js`
 - Modify: `tests/SessionReviewing.test.js`
 
-- [x] **Step 1: Implementar Receiving preservando la actualización incorporada en el PR 1**
+- [ ] **Step 1: Implementar Receiving preservando la actualización incorporada en el PR 1**
 
 Crear `src/stages/ReceivingStage.js`:
 
@@ -1123,7 +1123,7 @@ class ReceivingStage extends SessionStage{
 module.exports = ReceivingStage;
 ```
 
-- [x] **Step 2: Implementar Bidding con commit posterior al cálculo**
+- [ ] **Step 2: Implementar Bidding con commit posterior al cálculo**
 
 Crear `src/stages/BiddingStage.js`:
 
@@ -1165,7 +1165,7 @@ module.exports = BiddingStage;
 
 El cálculo de `assignments` debe terminar antes de mutar `Session`; si `ReviewerAssigner.assign` lanza, no se ejecutan las dos últimas líneas.
 
-- [x] **Step 3: Implementar Reviewing con completitud por asignaciones**
+- [ ] **Step 3: Implementar Reviewing con completitud por asignaciones**
 
 Crear `src/stages/ReviewingStage.js`:
 
@@ -1220,7 +1220,7 @@ class ReviewingStage extends SessionStage{
 module.exports = ReviewingStage;
 ```
 
-- [x] **Step 4: Implementar Selection preservando temporalmente la política porcentual del TP1**
+- [ ] **Step 4: Implementar Selection preservando temporalmente la política porcentual del TP1**
 
 Crear `src/stages/SelectionStage.js`:
 
@@ -1259,7 +1259,7 @@ acceptancePercentage(){
 
 Task PR3.3 eliminará `_acceptancePercentage` y este accessor cuando el PR 3 introduzca la Strategy configurable.
 
-- [x] **Step 5: Conectar `Session` a `ReceivingStage`**
+- [ ] **Step 5: Conectar `Session` a `ReceivingStage`**
 
 Agregar al inicio de `src/Session.js`:
 
@@ -1275,7 +1275,7 @@ this._stage = new ReceivingStage();
 
 Conservar en `Session` las consultas de datos, bids y asignaciones; eliminar la lógica que ahora vive en los estados. En particular, reemplazar la implementación directa de `updatePaper` agregada en el PR 1 por la delegación a `_stage`, manteniendo `_containsPaper` como operación interna del contexto.
 
-- [x] **Step 6: Reforzar que las transiciones fallidas no dejan cambios parciales**
+- [ ] **Step 6: Reforzar que las transiciones fallidas no dejan cambios parciales**
 
 Agregar al caso imposible de `tests/SessionAssignment.test.js`:
 
@@ -1295,7 +1295,7 @@ expect(session.stage()).toBe("Reviewing");
 expect([papers[0].reviewsCount(), papers[1].reviewsCount()]).toEqual(reviewCountsBefore);
 ```
 
-- [x] **Step 7: Verificar refactor State completo**
+- [ ] **Step 7: Verificar refactor State completo**
 
 Run:
 
@@ -1306,7 +1306,7 @@ npm test -- --runInBand
 
 Expected: todas las operaciones previas conservadas; cada operación inválida falla con mensaje específico; las transiciones fallidas mantienen estado.
 
-- [x] **Step 8: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add src/Session.js src/stages tests/SessionStages.test.js tests/SessionAssignment.test.js tests/SessionReviewing.test.js tests/SessionSelection.test.js
