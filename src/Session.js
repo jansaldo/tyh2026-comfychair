@@ -1,4 +1,3 @@
-const FixedAcceptanceSelector = require("./FixedAcceptanceSelector");
 const ReceivingStage = require("./stages/ReceivingStage");
 
 class Session{
@@ -10,7 +9,7 @@ class Session{
         this._assignments=[];
         this._acceptedPapers=[];
         this._stage=new ReceivingStage();
-        this._acceptancePolicy=new FixedAcceptanceSelector(0);
+        this._acceptancePercentage=0;
     }
     name(){
         return this._name;
@@ -77,19 +76,15 @@ class Session{
     closeReviewing(){
         return this._stage.closeReviewing(this);
     }
-    setAcceptancePolicy(policy){
-        if (typeof(policy) !== "object" || policy === null || typeof(policy.select) !== "function") {
-            throw new Error("Acceptance policy must implement select(papers)");
+    setAcceptancePercentage(percentage){
+        if (!Number.isInteger(percentage) || percentage < 0 || percentage > 100) {
+            throw new Error("Acceptance percentage must be between 0 and 100");
         }
 
-        this._acceptancePolicy = policy;
-        this._acceptedPapers = [];
+        this._acceptancePercentage = percentage;
     }
-    acceptancePolicy(){
-        return this._acceptancePolicy;
-    }
-    setAcceptancePercentage(percentage){
-        this.setAcceptancePolicy(new FixedAcceptanceSelector(percentage));
+    acceptancePercentage(){
+        return this._acceptancePercentage;
     }
     selectAcceptedPapers(){
         return this._stage.selectAcceptedPapers(this);

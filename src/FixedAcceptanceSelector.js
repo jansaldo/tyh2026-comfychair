@@ -1,26 +1,36 @@
-const AcceptancePolicy = require("./AcceptancePolicy");
-
-class FixedAcceptanceSelector extends AcceptancePolicy{
-    constructor(percentage){
-        super();
-        const configuredPercentage = typeof(percentage) === "undefined" ? 0 : percentage;
-        this.assertValidPercentage(configuredPercentage);
-        this._percentage = configuredPercentage;
-    }
+class FixedAcceptanceSelector{
     select(papers, percentage){
-        const selectedPercentage = typeof(percentage) === "undefined"
-            ? this._percentage
-            : percentage;
-        this.assertValidPercentage(selectedPercentage);
         const orderedPapers = this.orderByScoreAndSubmissionOrder(papers);
-        const acceptedCount = Math.floor((orderedPapers.length * selectedPercentage) / 100);
+        const acceptedCount = Math.floor((orderedPapers.length * percentage) / 100);
 
         return orderedPapers.slice(0, acceptedCount);
     }
-    assertValidPercentage(percentage){
-        if (!Number.isInteger(percentage) || percentage < 0 || percentage > 100) {
-            throw new Error("Acceptance percentage must be between 0 and 100");
+    orderByScoreAndSubmissionOrder(papers){
+        const orderedPapers = [];
+
+        for (const paper of papers) {
+            this.insertPaperByScore(orderedPapers, paper);
         }
+
+        return orderedPapers;
+    }
+    insertPaperByScore(orderedPapers, paper){
+        let inserted = false;
+
+        for (let index = 0; index < orderedPapers.length; index += 1) {
+            if (this.shouldInsertBefore(paper, orderedPapers[index])) {
+                orderedPapers.splice(index, 0, paper);
+                inserted = true;
+                break;
+            }
+        }
+
+        if (!inserted) {
+            orderedPapers.push(paper);
+        }
+    }
+    shouldInsertBefore(candidatePaper, orderedPaper){
+        return candidatePaper.score() > orderedPaper.score();
     }
 }
 
