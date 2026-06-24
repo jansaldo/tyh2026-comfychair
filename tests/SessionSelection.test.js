@@ -1,3 +1,5 @@
+const AcceptanceByCount = require("../src/AcceptanceByCount");
+const AcceptanceByScoreThreshold = require("../src/AcceptanceByScoreThreshold");
 const Paper = require("../src/Paper");
 const Session = require("../src/Session");
 const User = require("../src/User");
@@ -65,6 +67,45 @@ function submitReviewsForPaper(targetSession, paper, score) {
 beforeEach(buildFixture);
 
 describe("A Session during selection", function sessionSelectionSuite() {
+    it("should delegate selection to its configured policy", function shouldUseConfiguredPolicy() {
+        const threePapers = buildPapers(3);
+        moveSessionToSelection(session, threePapers, [1, 3, 2]);
+        session.setAcceptancePolicy(new AcceptanceByCount(2));
+
+        expect(session.selectAcceptedPapers()).toEqual([threePapers[1], threePapers[2]]);
+    });
+
+    it("should isolate policies and results between sessions", function shouldIsolateSessionPolicies() {
+        const countSession = new Session();
+        const thresholdSession = new Session();
+        const countPapers = buildPapers(3);
+        const thresholdPapers = buildPapers(3);
+        moveSessionToSelection(countSession, countPapers, [1, 2, 3]);
+        moveSessionToSelection(thresholdSession, thresholdPapers, [1, 2, 3]);
+        countSession.setAcceptancePolicy(new AcceptanceByCount(1));
+        thresholdSession.setAcceptancePolicy(new AcceptanceByScoreThreshold(2));
+
+        expect(countSession.selectAcceptedPapers()).toEqual([countPapers[2]]);
+        expect(thresholdSession.selectAcceptedPapers()).toEqual([thresholdPapers[2], thresholdPapers[1]]);
+        expect(countSession.acceptancePolicy()).not.toBe(thresholdSession.acceptancePolicy());
+    });
+
+    it("should reject an object without a selection contract", function shouldRejectInvalidPolicy() {
+        function configureInvalidPolicy() {
+            session.setAcceptancePolicy({});
+        }
+
+        expect(configureInvalidPolicy).toThrow("Acceptance policy must implement select(papers)");
+    });
+
+    it("should keep percentage configuration as a compatibility facade", function shouldKeepPercentageFacade() {
+        const fourPapers = buildPapers(4);
+        moveSessionToSelection(session, fourPapers, [2, 3, 1, 0]);
+        session.setAcceptancePercentage(50);
+
+        expect(session.selectAcceptedPapers()).toEqual([fourPapers[1], fourPapers[0]]);
+    });
+
     it("should accept the top scoring papers up to the configured percentage", function shouldAcceptTopScoringPapers() {
         const fourPapers = buildPapers(4);
         moveSessionToSelection(session, fourPapers, [2, 3, 1, 0]);
@@ -101,7 +142,7 @@ describe("A Session during selection", function sessionSelectionSuite() {
             session.selectAcceptedPapers();
         }
 
-        expect(selectTooEarly).toThrow("Session must be at stage Selection");
+        expect(selectTooEarly).toThrow("Cannot select accepted papers during Receiving stage");
     });
 
     it("should reject invalid acceptance percentages", function shouldRejectInvalidPercentage() {

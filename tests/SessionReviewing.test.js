@@ -91,7 +91,7 @@ describe("A Session during reviewing", function sessionReviewingSuite() {
             session.submitReview(papers[0], reviewers[0], "Too early", 1);
         }
 
-        expect(submitReviewTooEarly).toThrow("Session must be at stage Reviewing");
+        expect(submitReviewTooEarly).toThrow("Cannot submit reviews during Receiving stage");
     });
 
     it("should not allow the same assigned reviewer to review twice", function shouldRejectDuplicateAssignedReview() {
@@ -113,7 +113,11 @@ describe("A Session during reviewing", function sessionReviewingSuite() {
             session.closeReviewing();
         }
 
+        const reviewCountsBefore = [papers[0].reviewsCount(), papers[1].reviewsCount()];
+
         expect(closeReviewing).toThrow("Cannot close reviewing before all assigned reviews are submitted");
+        expect(session.stage()).toBe("Reviewing");
+        expect([papers[0].reviewsCount(), papers[1].reviewsCount()]).toEqual(reviewCountsBefore);
     });
 
     it("should not close reviewing when reviews were not submitted by assigned reviewers", function shouldRequireAssignedReviewerReviews() {
