@@ -3,6 +3,8 @@ const Session = require("./src/Session");
 const User = require("./src/User");
 const RegularPaper = require("./src/RegularPaper");
 const Poster = require("./src/Poster");
+const AcceptanceByCount = require("./src/AcceptanceByCount");
+const AcceptanceByScoreThreshold = require("./src/AcceptanceByScoreThreshold");
 const {Interests} = require("./src/Bid");
 
 const TOPICS = ["IA aplicada", "Testing", "Arquitectura", "Datos", "UX"];
@@ -40,6 +42,61 @@ function interestForSlot(slot) {
 function paperType(paper) { return paper instanceof Poster ? "Poster" : "Regular"; }
 function paperLabel(paper) { return paperType(paper) + ' "' + paper.title() + '"'; }
 function logStep(method, message) { console.log("\n- " + method + ": " + message); }
+function papersLabel(papers) {
+    if (papers.length === 0) return "ninguno";
+
+    const labels = [];
+    for (const paper of papers) labels.push(paperLabel(paper));
+    return labels.join("; ");
+}
+function acceptedFlag(acceptedPapers, paper, flag) {
+    if (acceptedPapers.includes(paper)) return flag;
+    return "-";
+}
+function printPolicyResult(name, acceptedPapers, totalPapers) {
+    console.log("  -> " + name + ": " + acceptedPapers.length + "/" + totalPapers + " aceptados: " + papersLabel(acceptedPapers));
+}
+function highestSubmittedScore(submissions) {
+    let highestScore = Number.NEGATIVE_INFINITY;
+
+    for (const submission of submissions) {
+        highestScore = Math.max(highestScore, submission.paper.score());
+    }
+
+    return highestScore;
+}
+function buildUpdatedPaper(paper, index) {
+    const authors = paper.authors().slice();
+    const correspondingAuthor = paper.correspondingAuthor();
+    const updatedTitle = paper.title() + " - version corregida";
+
+    if (paper instanceof Poster) {
+        return new Poster(
+            updatedTitle,
+            authors,
+            correspondingAuthor,
+            "https://demo.test/poster-" + index + "-corregido.pdf",
+            "https://demo.test/poster-" + index + "-corregido.zip"
+        );
+    }
+
+    return new RegularPaper(
+        updatedTitle,
+        authors,
+        correspondingAuthor,
+        "Resumen corregido antes del cierre de recepcion."
+    );
+}
+function logExpectedRejection(method, message, action) {
+    logStep(method, message);
+
+    try {
+        action();
+        console.log("  ! La operacion no fue rechazada.");
+    } catch (error) {
+        console.log("  -> rechazo esperado: " + error.message);
+    }
+}
 function buildUsers(role, count) {
     const users = [];
     for (let index = 0; index < count; index += 1) {
@@ -65,6 +122,7 @@ const reviewers = buildUsers("Reviewer", randomInt(6, 7));
 const authors = buildUsers("Author", randomInt(5, 7));
 const submissions = [];
 
+logStep("Session.stage", 'La sesion arranca en etapa "' + session.stage() + '".');
 logStep("Conference.new", 'Se crea la conferencia "' + conference.name() + '" con track "' + trackName + '".');
 for (const chair of chairs) {
     logStep("Conference.addChair", "Se suma a " + chair.fullName + " como chair.");
@@ -85,8 +143,26 @@ for (let index = 0; index < randomInt(3, 4); index += 1) {
     submissions.push({paper: paper, signal: randomInt(-1, 3)});
 }
 
-logStep("Session.closeSubmissions", 'Se cierra Receiving y arranca Bidding. Etapa actual: "' + session.stage() + '" -> "Bidding".');
+const submissionToUpdate = submissions[0];
+const originalPaperLabel = paperLabel(submissionToUpdate.paper);
+const updateCandidate = buildUpdatedPaper(submissionToUpdate.paper, 1);
+logStep("Session.updatePaper", submissionToUpdate.paper.correspondingAuthor().fullName + " actualiza " + originalPaperLabel + " antes del cierre de recepcion.");
+session.updatePaper(submissionToUpdate.paper, submissionToUpdate.paper.correspondingAuthor(), updateCandidate);
+console.log("  -> queda como " + paperLabel(submissionToUpdate.paper) + ".");
+
+logStep("Session.closeSubmissions", "Se cierra Receiving y arranca Bidding.");
 session.closeSubmissions();
+console.log('  -> etapa actual: "' + session.stage() + '".');
+
+const rejectedUpdateCandidate = buildUpdatedPaper(submissionToUpdate.paper, 2);
+function updateAfterDeadline() {
+    session.updatePaper(
+        submissionToUpdate.paper,
+        submissionToUpdate.paper.correspondingAuthor(),
+        rejectedUpdateCandidate
+    );
+}
+logExpectedRejection("Session.updatePaper", "Se intenta corregir el mismo paper despues del deadline.", updateAfterDeadline);
 
 let enteredBids = 0;
 for (let paperIndex = 0; paperIndex < submissions.length; paperIndex += 1) {
@@ -100,6 +176,7 @@ for (let paperIndex = 0; paperIndex < submissions.length; paperIndex += 1) {
 
 logStep("Session.closeBidding", "Se calculan asignaciones segun bids y cupos.");
 session.closeBidding();
+console.log('  -> etapa actual: "' + session.stage() + '".');
 for (const submission of submissions) {
     console.log("  -> " + paperLabel(submission.paper) + " queda con: " + namesOf(session.assignedReviewersFor(submission.paper)));
 }
@@ -115,12 +192,26 @@ for (const submission of submissions) {
 
 logStep("Session.closeReviewing", "Todas las revisiones llegaron; pasa a Selection.");
 session.closeReviewing();
+console.log('  -> etapa actual: "' + session.stage() + '".');
 
 const acceptancePercentage = pick([40, 50, 60]);
 logStep("Session.setAcceptancePercentage", "Se fija corte de aceptacion en " + acceptancePercentage + "%.");
 session.setAcceptancePercentage(acceptancePercentage);
-logStep("Session.selectAcceptedPapers", "Se seleccionan los mejores papers por score.");
-const acceptedPapers = session.selectAcceptedPapers();
+logStep("Session.selectAcceptedPapers", "Se seleccionan los mejores papers por porcentaje fijo.");
+const acceptedByPercentage = session.selectAcceptedPapers();
+printPolicyResult("porcentaje fijo " + acceptancePercentage + "%", acceptedByPercentage, submissions.length);
+
+const maximumAcceptedCount = Math.min(2, submissions.length);
+logStep("Session.setAcceptancePolicy", "Se cambia a politica por cupo fijo: maximo " + maximumAcceptedCount + " papers.");
+session.setAcceptancePolicy(new AcceptanceByCount(maximumAcceptedCount));
+const acceptedByCount = session.selectAcceptedPapers();
+printPolicyResult("cupo fijo " + maximumAcceptedCount, acceptedByCount, submissions.length);
+
+const scoreThreshold = highestSubmittedScore(submissions);
+logStep("Session.setAcceptancePolicy", "Se cambia a politica por score minimo: " + scoreThreshold.toFixed(2) + ".");
+session.setAcceptancePolicy(new AcceptanceByScoreThreshold(scoreThreshold));
+const acceptedByThreshold = session.selectAcceptedPapers();
+printPolicyResult("score minimo " + scoreThreshold.toFixed(2), acceptedByThreshold, submissions.length);
 
 let regularCount = 0;
 for (const submission of submissions) if (!(submission.paper instanceof Poster)) regularCount += 1;
@@ -131,8 +222,16 @@ console.log("Track demo: " + trackName);
 console.log("Chairs: " + conference.chairs().length + " | Reviewers: " + session.reviewers().length);
 console.log("Papers enviados: " + submissions.length + " (" + regularCount + " regulares, " + (submissions.length - regularCount) + " posters)");
 console.log("Bids cargados: " + enteredBids + " | Revisiones enviadas: " + (submissions.length * 3));
-console.log("Aceptados: " + acceptedPapers.length + "/" + submissions.length + " con corte " + acceptancePercentage + "%");
+console.log("Aceptados por porcentaje: " + acceptedByPercentage.length + "/" + submissions.length + " con corte " + acceptancePercentage + "%");
+console.log("Aceptados por cupo fijo: " + acceptedByCount.length + "/" + submissions.length + " con maximo " + maximumAcceptedCount);
+console.log("Aceptados por score minimo: " + acceptedByThreshold.length + "/" + submissions.length + " con umbral " + scoreThreshold.toFixed(2));
 for (const submission of submissions) {
-    const status = acceptedPapers.includes(submission.paper) ? "ACEPTADO" : "rechazado";
-    console.log(" - " + paperLabel(submission.paper) + " | score " + submission.paper.score().toFixed(2) + " | " + status);
+    const percentageStatus = acceptedFlag(acceptedByPercentage, submission.paper, "porcentaje");
+    const countStatus = acceptedFlag(acceptedByCount, submission.paper, "cupo");
+    const thresholdStatus = acceptedFlag(acceptedByThreshold, submission.paper, "score");
+    console.log(
+        " - " + paperLabel(submission.paper) +
+        " | score " + submission.paper.score().toFixed(2) +
+        " | politicas: " + percentageStatus + "/" + countStatus + "/" + thresholdStatus
+    );
 }

@@ -8,9 +8,15 @@ describe("The live demo script", function demoSuite() {
         });
 
         expect(output).toContain("Demo en vivo de ComfyChair");
+        expect(output).toContain("Session.updatePaper");
+        expect(output).toContain("version corregida");
+        expect(output).toContain("rechazo esperado: Cannot update papers during Bidding stage");
         expect(output).toContain("Session.closeSubmissions");
         expect(output).toContain("Session.closeBidding");
+        expect(output).toContain("Session.setAcceptancePolicy");
         expect(output).toContain("Resumen final de la conferencia");
-        expect(output).toMatch(/Aceptados: \d+\/\d+/);
+        expect(output).toMatch(/Aceptados por porcentaje: \d+\/\d+/);
+        expect(output).toMatch(/Aceptados por cupo fijo: \d+\/\d+/);
+        expect(output).toMatch(/Aceptados por score minimo: \d+\/\d+/);
     });
 });
