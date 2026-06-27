@@ -255,7 +255,6 @@ classDiagram
     ReviewAssignment o--> User : reviewer
     Session ..> ReviewerAssigner : uses
     Session ..> AcceptancePolicy : uses
-}
 ```
 
 ## 4. Resumen de responsabilidad de clases
