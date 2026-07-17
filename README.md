@@ -134,8 +134,8 @@ docs/DECISIONES.md            # Decisiones de diseño y resolución de ambigüed
 El flujo transiciona de forma secuencial y manual a través de las siguientes etapas:
 
 1. `Receiving`: los autores pueden enviar artículos (`submit`) válidos (`paper.isValid()`) y actualizar papers ya enviados con `updatePaper` antes del cierre.
-2. `Bidding`: se ingresa tras llamar a `closeSubmissions()`. Los revisores registran o actualizan sus intereses (`enterBid`). No se aceptan nuevos artículos.
-3. `Reviewing`: se ingresa con `closeBidding()`, ejecutando automáticamente el algoritmo de asignación de 3 revisores por artículo (evitando conflictos de interés). Los revisores asignados suben su evaluación mediante `submitReview`.
+2. `Bidding`: se ingresa tras llamar a `closeSubmissions()` cuando existe al menos un paper. Los revisores registran o actualizan sus intereses (`enterBid`). No se aceptan nuevos artículos.
+3. `Reviewing`: se ingresa con `closeBidding()` cuando existe al menos un paper, ejecutando automáticamente el algoritmo de asignación de 3 revisores por artículo (evitando conflictos de interés). Los revisores asignados suben su evaluación mediante `submitReview`.
 4. `Selection`: se ingresa mediante `closeReviewing()` cuando todos los artículos tienen sus 3 revisiones completas. Se configura la política con `setAcceptancePolicy()` o, por compatibilidad, con `setAcceptancePercentage()`, y se obtienen los aceptados con `selectAcceptedPapers()`.
 
 ## Convenciones del trabajo

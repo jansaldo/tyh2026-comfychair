@@ -18,6 +18,10 @@ class BiddingStage extends SessionStage{
         existingBid.setInterest(interest);
     }
     closeBidding(session){
+        if (session.papers().length === 0) {
+            throw new Error("Cannot close bidding without papers");
+        }
+
         const assigner = new ReviewerAssigner();
         const assignments = assigner.assign(
             session.papers(),

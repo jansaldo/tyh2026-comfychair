@@ -27,6 +27,10 @@ class ReceivingStage extends SessionStage{
         paper.updateFrom(candidatePaper);
     }
     closeSubmissions(session){
+        if (session.papers().length === 0) {
+            throw new Error("Cannot close submissions without papers");
+        }
+
         session._transitionTo(new BiddingStage());
     }
 }
