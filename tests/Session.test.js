@@ -46,6 +46,10 @@ describe("A Session", ()=>{
 })
 
 describe("During the bidding process, a Session", ()=>{
+    beforeEach(function submitPaperBeforeBidding() {
+        asse.submit(paper02);
+    });
+
     it("should receive bids", ()=>{
         asse.closeSubmissions();
         asse.enterBid(paper02, juan, Interests.Interested);

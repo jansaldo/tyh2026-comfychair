@@ -2,6 +2,7 @@ const {Interests} = require("../src/Bid");
 const Paper = require("../src/Paper");
 const Session = require("../src/Session");
 const User = require("../src/User");
+const BiddingStage = require("../src/stages/BiddingStage");
 
 function buildFixtureAt(stageName) {
     const session = new Session();
@@ -94,4 +95,25 @@ describe("Session operations by stage", function sessionStagesSuite() {
             }
         }
     }
+});
+
+describe("Session stage closing preconditions", function sessionStageClosingPreconditions() {
+    it("should keep receiving open when closing submissions without papers", function shouldRequirePapersToCloseSubmissions() {
+        const session = new Session();
+
+        expect(function closeEmptySubmissions() {
+            session.closeSubmissions();
+        }).toThrow("Cannot close submissions without papers");
+        expect(session.stage()).toBe("Receiving");
+    });
+
+    it("should keep bidding open when closing bidding without papers", function shouldRequirePapersToCloseBidding() {
+        const session = new Session();
+        session._transitionTo(new BiddingStage());
+
+        expect(function closeEmptyBidding() {
+            session.closeBidding();
+        }).toThrow("Cannot close bidding without papers");
+        expect(session.stage()).toBe("Bidding");
+    });
 });
