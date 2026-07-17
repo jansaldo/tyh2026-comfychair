@@ -33,6 +33,10 @@ Este documento resume las decisiones tomadas para la Parte 2 del proyecto ComfyC
 - Se valida contra las asignaciones efectivas y no contra un conteo bruto de reviews.
 - Esto evita falsos positivos si un usuario no asignado intenta cargar revisiones.
 
+### 1.6. Cantidad minima de papers para cerrar etapas
+- `ReceivingStage` y `BiddingStage` requieren al menos un paper para cerrar su etapa.
+- Si la sesion no tiene papers, la operacion falla con un error descriptivo y conserva la etapa actual.
+
 ## 2. Criterios de diseno
 
 ### 2.1. Responsabilidad unica
